@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}404 - Not Found{% endblock %}
+{% block page_title %}Page Not Found{% endblock %}
+{% block content %}
+<div class="page-title-block">
+    <p class="kicker">Error</p>
+    <h2>404 — Page not found</h2>
+</div>
+<p class="text-muted mb-4">The requested path is not part of this audit workspace.</p>
+<a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Go to dashboard</a>
+{% endblock %}

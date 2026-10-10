@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Assessment {{ assessment.name }} - CSAT{% endblock %}
+{% block page_title %}Assessment Details{% endblock %}
+{% block content %}
+<div class="page-title-block d-flex justify-content-between align-items-end gap-3">
+    <div>
+        <p class="kicker">Assessment · {{ format_date(assessment.assessment_date) }}</p>
+        <h2>{{ assessment.name }}</h2>
+    </div>
+    <span class="badge bg-{{ assessment_status_badge(assessment.status) }}">{{ assessment.status|upper }}</span>
+</div>
+
+{% set sc = assessment.security_score %}
+<div class="dossier-hero mb-4">
+    <div class="dossier-score">
+        <div>
+            <p class="kicker">Security score</p>
+            <div class="score-value {% if sc is not none and sc < 40 %}is-critical{% endif %}">{{ format_score(assessment.security_score) }}</div>
+            <div class="score-meta">/ 100</div>
+        </div>
+        <div>
+            <div class="score-track">
+                <div class="score-fill {% if sc is not none and sc < 40 %}is-critical{% endif %}" style="width: {{ assessment.security_score or 0 }}%"></div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body d-flex flex-column justify-content-center gap-3" style="border: none; border-radius: 0;">
+        {% if assessment.description %}
+        <p class="mb-0">{{ assessment.description }}</p>
+        {% endif %}
+        <div class="row g-3">
+            <div class="col-md-3 col-6">
+                <div class="form-label">Assessment date</div>
+                <div>{{ format_date(assessment.assessment_date) }}</div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="form-label">Completion</div>
+                <div>{{ format_date(assessment.completion_date) }}</div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="form-label">Engines</div>
+                <div class="mono">{{ assessment.engines_used or '—' }}</div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="form-label">Redundancy</div>
+                <div class="mono">{{ assessment.raw_count or 0 }} raw → {{ assessment.deduped_count or 0 }} unique</div>
+            </div>
+            {% if assessment.scan_error %}
+            <div class="col-12">
+                <div class="form-label">Last error</div>
+                <div class="text-critical small">{{ assessment.scan_error }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="severity-strip">
+    <div class="strip-cell">
+        <p class="strip-label">Critical</p>
+        <p class="strip-value {% if assessment.critical_count %}is-accent{% endif %}">{{ assessment.critical_count }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">High</p>
+        <p class="strip-value sev-high">{{ assessment.high_count }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">Medium</p>
+        <p class="strip-value sev-medium">{{ assessment.medium_count }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">Low</p>
+        <p class="strip-value sev-low">{{ assessment.low_count }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">Info</p>
+        <p class="strip-value text-muted">{{ assessment.informational_count }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">Total</p>
+        <p class="strip-value">{{ assessment.total_findings }}</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0">Findings for this Assessment</h6>
+    </div>
+    <div class="card-body">
+        {% if assessment.findings %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Severity</th>
+                        <th>Category</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for finding in assessment.findings %}
+                    <tr>
+                        <td><span class="badge bg-{{ severity_badge_color(finding.severity) }}">{{ finding.severity|upper }}</span></td>
+                        <td>{{ finding.category }}</td>
+                        <td><a href="{{ url_for('findings.detail', id=finding.id) }}">{{ finding.title }}</a></td>
+                        <td><span class="badge bg-{{ status_badge_color(finding.remediation_status) }}">{{ finding.remediation_status }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">No findings recorded.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <a href="{{ url_for('reports.index') }}" class="btn btn-primary"><i class="bi bi-file-earmark-text"></i> Generate report</a>
+    <a href="{{ url_for('findings.index') }}" class="btn btn-outline-secondary"><i class="bi bi-exclamation-triangle"></i> View all findings</a>
+    {% if ai_on and assessment.findings %}
+    <button class="btn btn-outline-secondary" id="aiPrioritizeBtn">AI Risk Prioritization</button>
+    {% endif %}
+    <a href="{{ url_for('history.index') }}" class="btn btn-outline-secondary"><i class="bi bi-clock-history"></i> Back to History</a>
+</div>
+{% if ai_on and assessment.findings %}
+<div id="aiPrioritizeOut" class="mt-3" style="display:none;">
+    <div class="card">
+        <div class="card-header"><h6 class="mb-0">AI Risk Prioritization</h6></div>
+        <div class="card-body"><pre id="aiPrioritizeText" style="white-space: pre-wrap; font-size: 13px; margin: 0;"></pre></div>
+    </div>
+</div>
+<script>
+const pBtn = document.getElementById('aiPrioritizeBtn');
+if (pBtn) {
+    pBtn.addEventListener('click', function() {
+        pBtn.disabled = true;
+        pBtn.textContent = 'Ranking…';
+        fetch('/ai/prioritize/{{ assessment.id }}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': getCsrfToken()}
+        })
+        .then(r => r.json())
+        .then(data => {
+            const out = document.getElementById('aiPrioritizeOut');
+            out.style.display = 'block';
+            let text;
+            if (data.success) {
+                text = 'AI fix order:\n' + (data.ai_order || '').split('\n').map((l,i) => (i+1) + '. ' + l).join('\n');
+                if (data.severity_order && data.severity_order.length) {
+                    text += '\n\nSeverity-ranked (native):\n' + data.severity_order.map((l,i) => (i+1) + '. ' + l).join('\n');
+                }
+            } else {
+                text = 'Error: ' + data.error;
+            }
+            document.getElementById('aiPrioritizeText').textContent = text;
+            pBtn.disabled = false;
+            pBtn.textContent = 'AI Risk Prioritization';
+        })
+        .catch(() => { pBtn.disabled = false; pBtn.textContent = 'AI Risk Prioritization'; });
+    });
+}
+</script>
+{% endif %}
+{% endblock %}

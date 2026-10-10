@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}New Assessment - CSAT{% endblock %}
+{% block page_title %}Start New Assessment{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">New Security Assessment</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('assessment.create') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Assessment Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required maxlength="200" placeholder="e.g., Q4 2024 Security Audit">
+                        <div class="form-text">Give your assessment a descriptive name.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Describe the scope and objectives of this assessment..."></textarea>
+                    </div>
+                    <div class="alert alert-info alert-permanent" data-permanent role="status">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>AWS assessment:</strong>
+                        Valid credentials on this machine are required (<code>aws configure</code>).
+                    </div>
+                    <div class="mb-3">
+                        <a class="d-inline-flex align-items-center gap-1 text-decoration-none"
+                           data-bs-toggle="collapse" href="#awsSetupHelp" role="button"
+                           aria-expanded="false" aria-controls="awsSetupHelp"
+                           style="color: var(--ink); font-weight: 600; border-bottom: 1px solid var(--rule);">
+                            <i class="bi bi-question-circle"></i> How do I set up AWS?
+                        </a>
+                        <div class="collapse mt-2" id="awsSetupHelp">
+                            <div class="border p-3" style="border-color: var(--rule) !important; background: var(--paper-elevated);">
+                                <ol class="mb-2 ps-3">
+                                    <li class="mb-1">In your terminal: <code>aws configure</code></li>
+                                    <li class="mb-1">IAM policy: <strong>SecurityAudit</strong> (read-only)</li>
+                                    <li class="mb-0">Optional region: set during <code>aws configure</code></li>
+                                </ol>
+                                <p class="mb-0 form-text">
+                                    AWS secret keys stay in your local AWS config (<code>~/.aws</code>).
+                                    This app never asks for or stores them. Localhost only.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" id="startBtn">
+                            <i class="bi bi-play-circle"></i> Start Assessment
+                        </button>
+                        <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

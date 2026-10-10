@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% block title %}Settings - CSAT{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">AWS connection</h5>
+                <span class="badge {% if aws and aws.credentials_found %}bg-success{% else %}bg-secondary{% endif %}" id="awsCredBadge">
+                    {% if aws and aws.credentials_found %}Credentials found{% else %}Not configured{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="form-label">Credentials</div>
+                        <div id="awsCredStatus" class="mono">
+                            {% if aws and aws.credentials_found %}Found on this machine{% else %}Not configured{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-label">Region</div>
+                        <div id="awsRegionStatus" class="mono">{{ (aws and aws.region) or '—' }}</div>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-secondary" id="awsTestBtn">
+                        <i class="bi bi-shield-check"></i> Test connection
+                    </button>
+                    <span class="form-text mb-0">Identity check only — does not scan or change anything.</span>
+                </div>
+                <div id="awsTestResult" class="form-text" role="status" aria-live="polite"></div>
+                <hr class="my-3" style="border-color: var(--rule);">
+                <div class="form-label">Setup (terminal — keys never enter this app)</div>
+                <ol class="mb-2 ps-3">
+                    <li class="mb-1">Run <code>aws configure</code></li>
+                    <li class="mb-1">IAM policy: <strong>SecurityAudit</strong> (read-only)</li>
+                    <li class="mb-0">Set a default region when prompted</li>
+                </ol>
+                <p class="form-text mb-0" id="awsTrustLine">
+                    AWS secret keys stay in your local AWS config (<code>~/.aws</code>).
+                    This app never asks for or stores them. Localhost only.
+                </p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0" id="appSettingsTitle" style="cursor: default; user-select: none;">Application Settings</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('settings.update') }}" id="appSettingsForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% for key in ['report_format', 'theme', 'assessments_per_page', 'findings_per_page'] if key in settings %}
+                    {% set setting = settings[key] %}
+                    <div class="mb-3">
+                        <label class="form-label" for="setting_{{ key }}">{{ key|replace('_', ' ')|title }}</label>
+                        {% if key == 'theme' %}
+                        <select class="form-select" id="setting_{{ key }}" name="setting_{{ key }}">
+                            <option value="light" {% if setting.value == 'light' %}selected{% endif %}>Light</option>
+                            <option value="dark" {% if setting.value == 'dark' %}selected{% endif %}>Dark</option>
+                        </select>
+                        {% elif key == 'report_format' %}
+                        <select class="form-select" id="setting_{{ key }}" name="setting_{{ key }}">
+                            <option value="pdf" {% if setting.value == 'pdf' %}selected{% endif %}>PDF</option>
+                            <option value="html" {% if setting.value == 'html' %}selected{% endif %}>HTML</option>
+                            <option value="json" {% if setting.value == 'json' %}selected{% endif %}>JSON</option>
+                        </select>
+                        {% else %}
+                        <input type="number" min="1" max="100" class="form-control" id="setting_{{ key }}" name="setting_{{ key }}" value="{{ setting.value }}">
+                        {% endif %}
+                        {% if setting.description %}
+                        <div class="form-text">{{ setting.description }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div id="devScannerMode" class="mb-3 p-3 border" hidden data-dev-panel>
+                        <label class="form-label" for="devScannerModeSelect">Mode</label>
+                        <select class="form-select" id="devScannerModeSelect" name="setting_scanner_mode">
+                            <option value="aws" {% if settings.get('scanner_mode') and settings['scanner_mode'].value == 'aws' %}selected{% endif %}>AWS</option>
+                            <option value="demo" {% if settings.get('scanner_mode') and settings['scanner_mode'].value == 'demo' %}selected{% endif %}>Demo</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="appSaveBtn" hidden>Save Application Settings</button>
+                </form>
+
+                <form method="POST" action="{{ url_for('settings.update') }}" id="aiSettingsForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <hr class="my-4">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div>
+                            <div class="form-label mb-0">AI Integration</div>
+                            <div class="form-text mb-0">Developer Mode · Gateway connection</div>
+                        </div>
+                        {% set gw_on = settings.get('ai_enabled') and settings['ai_enabled'].value == 'true' %}
+                        <span class="badge {% if gw_on %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if gw_on %}Enabled{% else %}Off{% endif %}
+                        </span>
+                    </div>
+                    <p class="form-text mb-3">
+                        Optional gateway for finding summaries, remediation advice, risk prioritization,
+                        and Q&amp;A. Uses an OpenAI-compatible endpoint over HTTPS (loopback allowed for local gateways).
+                        Off by default.
+                    </p>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="setting_ai_enabled" value="true"
+                                   id="aiEnabled" {% if settings.get('ai_enabled') and settings['ai_enabled'].value == 'true' %}checked{% endif %}
+                                   aria-controls="gatewayOptions" aria-expanded="{% if settings.get('ai_enabled') and settings['ai_enabled'].value == 'true' %}true{% else %}false{% endif %}">
+                            <label class="form-check-label" for="aiEnabled">AI Integration gateway</label>
+                        </div>
+                        <input type="hidden" name="setting_ai_enabled" value="false">
+                        {% if settings.get('ai_enabled') and settings['ai_enabled'].description %}
+                        <div class="form-text">{{ settings['ai_enabled'].description }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div id="gatewayOptions" class="gateway-options {% if not (settings.get('ai_enabled') and settings['ai_enabled'].value == 'true') %}is-collapsed{% endif %}"
+                         role="region" aria-label="Gateway integration options">
+                    <div class="gateway-options-inner">
+                    <div class="mb-3">
+                        <label class="form-label" for="aiBaseUrl">Gateway base URL <span class="text-danger" aria-hidden="true">*</span></label>
+                        <input type="text" class="form-control" id="aiBaseUrl" name="setting_ai_base_url"
+                               value="{{ settings.get('ai_base_url', {'value': ''}).value }}"
+                               placeholder="https://…/v1" autocomplete="off" required>
+                        {% if settings.get('ai_base_url') and settings['ai_base_url'].description %}
+                        <div class="form-text">{{ settings['ai_base_url'].description }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="aiApiKey">Gateway token <span class="text-danger" aria-hidden="true">*</span></label>
+                        <input type="password" class="form-control" id="aiApiKey" name="setting_ai_api_key"
+                               value="{{ settings.get('ai_api_key', {'value': '' }).value }}"
+                               autocomplete="off" placeholder="stored locally, never committed" required>
+                        {% if settings.get('ai_api_key') and settings['ai_api_key'].description %}
+                        <div class="form-text">{{ settings['ai_api_key'].description }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="aiModel">Model / channel</label>
+                        <input type="text" class="form-control" id="aiModel" name="setting_ai_model"
+                               value="{{ settings.get('ai_model', {'value': ''}).value }}"
+                               placeholder="model id" autocomplete="off">
+                        {% if settings.get('ai_model') and settings['ai_model'].description %}
+                        <div class="form-text">{{ settings['ai_model'].description }}</div>
+                        {% endif %}
+                    </div>
+                    </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="saveSettingsBtn"
+                            {% if not (settings.get('ai_enabled') and settings['ai_enabled'].value == 'true') %}hidden{% endif %}>Save Settings</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Integration Status</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Gateway: AI Integration (Developer Mode) → OpenAI-compatible endpoint · HTTPS required (loopback allowed).</li>
+                    <li>Gateway base URL and token are required when the gateway is enabled.</li>
+                    <li>Authentication: local offline account only — no cloud login, no multi-user.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var title = document.getElementById('appSettingsTitle');
+    var panel = document.getElementById('devScannerMode');
+    if (title && panel) {
+        var clicks = 0;
+        var timer = null;
+        title.addEventListener('click', function () {
+            clicks += 1;
+            if (timer) clearTimeout(timer);
+            if (clicks >= 3) {
+                clicks = 0;
+                panel.hidden = false;
+                return;
+            }
+            timer = setTimeout(function () { clicks = 0; }, 800);
+        });
+        var modeSelect = document.getElementById('devScannerModeSelect');
+        if (modeSelect) {
+            modeSelect.addEventListener('change', function () {
+                panel.hidden = true;
+            });
+        }
+    }
+
+    var aiToggle = document.getElementById('aiEnabled');
+    var saveBtn = document.getElementById('saveSettingsBtn');
+    if (aiToggle) {
+        var syncAiRequired = function () {
+            var on = aiToggle.checked;
+            var url = document.getElementById('aiBaseUrl');
+            var tok = document.getElementById('aiApiKey');
+            if (url) url.required = on;
+            if (tok) tok.required = on;
+            if (saveBtn) saveBtn.hidden = !on;
+        };
+        aiToggle.addEventListener('change', syncAiRequired);
+        syncAiRequired();
+    }
+
+    var appForm = document.getElementById('appSettingsForm');
+    var appSave = document.getElementById('appSaveBtn');
+    if (appForm && appSave) {
+        var appFieldNames = [
+            'setting_report_format',
+            'setting_theme',
+            'setting_assessments_per_page',
+            'setting_findings_per_page'
+        ];
+        var appInitial = {};
+        appFieldNames.forEach(function (name) {
+            var el = appForm.elements[name];
+            if (el) appInitial[name] = el.value;
+        });
+        var syncAppSave = function () {
+            var dirty = appFieldNames.some(function (name) {
+                var el = appForm.elements[name];
+                return el && el.value !== appInitial[name];
+            });
+            appSave.hidden = !dirty;
+        };
+        appForm.addEventListener('change', syncAppSave);
+        appForm.addEventListener('input', syncAppSave);
+    }
+
+    var testBtn = document.getElementById('awsTestBtn');
+    var testOut = document.getElementById('awsTestResult');
+    if (testBtn && testOut) {
+        testBtn.addEventListener('click', function () {
+            testBtn.disabled = true;
+            testOut.textContent = 'Checking identity…';
+            testOut.style.color = '';
+            fetch('/settings/aws-test', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrfToken() }
+            })
+                .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+                .then(function (res) {
+                    if (res.ok && res.data.ok) {
+                        testOut.style.color = 'var(--ok)';
+                        testOut.textContent = 'Connected — account ' + (res.data.account || '?') +
+                            (res.data.arn ? ' · ' + res.data.arn : '');
+                    } else {
+                        testOut.style.color = 'var(--accent)';
+                        testOut.textContent = (res.data && res.data.error) || 'Connection test failed.';
+                    }
+                })
+                .catch(function () {
+                    testOut.style.color = 'var(--accent)';
+                    testOut.textContent = 'Connection test failed.';
+                })
+                .finally(function () { testBtn.disabled = false; });
+        });
+    }
+})();
+</script>
+{% endblock %}

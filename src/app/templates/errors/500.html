@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}500 - Server Error{% endblock %}
+{% block page_title %}Server Error{% endblock %}
+{% block content %}
+<div class="page-title-block">
+    <p class="kicker">Error</p>
+    <h2>500 — Server error</h2>
+</div>
+<p class="text-muted mb-1">Internal server error. Something failed while handling this request.</p>
+<p class="text-muted mb-4">Try again, or check the console output for the traceback.</p>
+<a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Go to dashboard</a>
+{% endblock %}

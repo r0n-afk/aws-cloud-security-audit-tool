@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Assessment {{ assessment.name }} - History{% endblock %}
+{% block page_title %}Assessment History Detail{% endblock %}
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('history.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to History</a>
+</div>
+
+{% set sc = assessment.security_score %}
+<div class="dossier-hero mb-4">
+    <div class="dossier-score">
+        <div>
+            <p class="kicker">Security score</p>
+            <div class="score-value {% if sc is not none and sc < 40 %}is-critical{% endif %}">{{ format_score(assessment.security_score) }}</div>
+            <div class="score-meta">/ 100 · {{ assessment.status|upper }}</div>
+        </div>
+        <div>
+            <div class="score-track">
+                <div class="score-fill {% if sc is not none and sc < 40 %}is-critical{% endif %}" style="width: {{ assessment.security_score or 0 }}%"></div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body d-flex flex-column justify-content-center" style="border: none;">
+        <p class="mb-3">{{ assessment.description or 'No description.' }}</p>
+        <div class="row g-3">
+            <div class="col-md-4"><div class="form-label">Assessment date</div>{{ format_date(assessment.assessment_date) }}</div>
+            <div class="col-md-4"><div class="form-label">Completion</div>{{ format_date(assessment.completion_date) }}</div>
+            <div class="col-md-4"><div class="form-label">Created</div>{{ format_date(assessment.created_at) }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="severity-strip">
+    <div class="strip-cell">
+        <p class="strip-label">Critical</p>
+        <p class="strip-value {% if assessment.critical_count %}is-accent{% endif %}">{{ assessment.critical_count }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">High</p>
+        <p class="strip-value sev-high">{{ assessment.high_count }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">Medium</p>
+        <p class="strip-value sev-medium">{{ assessment.medium_count }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">Low</p>
+        <p class="strip-value sev-low">{{ assessment.low_count }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">Info</p>
+        <p class="strip-value text-muted">{{ assessment.informational_count }}</p>
+    </div>
+</div>
+{% endblock %}

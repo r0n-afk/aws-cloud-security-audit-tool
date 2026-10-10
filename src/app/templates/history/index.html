@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Assessment History - CSAT{% endblock %}
+{% block page_title %}Assessment History{% endblock %}
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-8">
+                <input type="text" class="form-control" name="search" placeholder="Search assessments..." value="{{ search or '' }}">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Search</button>
+                <a href="{{ url_for('history.index') }}" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0">All Assessments ({{ pagination.total }})</h6>
+    </div>
+    <div class="card-body p-0">
+        {% if assessments %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Date</th>
+                        <th>Score</th>
+                        <th>Findings</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in assessments %}
+                    <tr>
+                        <td>{{ a.id }}</td>
+                        <td><a href="{{ url_for('assessment.detail', id=a.id) }}">{{ a.name }}</a></td>
+                        <td>{{ format_date(a.assessment_date) }}</td>
+                        <td><span class="fw-bold mono {% if a.security_score is not none and a.security_score < 40 %}sev-critical{% endif %}">{{ format_score(a.security_score) }}</span></td>
+                        <td>{{ a.total_findings }}</td>
+                        <td><span class="badge bg-{{ assessment_status_badge(a.status) }}">{{ a.status }}</span></td>
+                        <td>
+                            <a href="{{ url_for('assessment.detail', id=a.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted py-4 mb-0">No assessments found.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination">
+        {% if pagination.has_prev %}
+        <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}&search={{ search or '' }}">Previous</a></li>
+        {% endif %}
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <li class="page-item {% if p == pagination.page %}active{% endif %}"><a class="page-link" href="?page={{ p }}&search={{ search or '' }}">{{ p }}</a></li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+        {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}&search={{ search or '' }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

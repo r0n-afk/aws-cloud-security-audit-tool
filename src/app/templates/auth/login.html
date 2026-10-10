@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Sign in — CSAT{% endblock %}
+{% block page_title %}Sign in{% endblock %}
+{% block content %}
+<div class="auth-panel">
+    <div class="auth-head">
+        <p class="auth-kicker">Local session</p>
+        <h1 class="auth-title">CSAT</h1>
+        <p class="auth-sub">AWS Cloud Security Audit Tool — offline sign-in.</p>
+    </div>
+    <div class="auth-body">
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label class="form-label" for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required maxlength="80" autocomplete="username">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Sign in</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

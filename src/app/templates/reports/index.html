@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Reports - CSAT{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Generate New Report</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('reports.generate') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Assessment</label>
+                            <select class="form-select" name="assessment_id" required>
+                                <option value="">Select Assessment</option>
+                                {% for a in assessments %}
+                                <option value="{{ a.id }}" {% if selected_assessment == a.id %}selected{% endif %}>{{ a.name }} ({{ format_date(a.assessment_date) }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Format</label>
+                            <select class="form-select" name="report_type">
+                                <option value="html">HTML</option>
+                                <option value="pdf">PDF</option>
+                                <option value="json">JSON</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-file-earmark-plus"></i> Generate</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Generated Reports</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if reports %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Assessment</th>
+                        <th>Type</th>
+                        <th>Generated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td>{{ report.id }}</td>
+                        <td><a href="{{ url_for('assessment.detail', id=report.assessment.id) }}">{{ report.assessment.name }}</a></td>
+                        <td><span class="badge bg-secondary">{{ report.report_type|upper }}</span></td>
+                        <td>{{ format_date(report.generated_date) }}</td>
+                        <td>
+                            <a href="{{ url_for('reports.download', id=report.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download"></i> Download</a>
+                            {% if report.report_type == 'html' %}
+                            <a href="{{ url_for('reports.preview', id=report.id) }}" class="btn btn-sm btn-outline-info" target="_blank"><i class="bi bi-eye"></i> Preview</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted py-4 mb-0">No reports generated yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

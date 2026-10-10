@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}First-run setup — CSAT{% endblock %}
+{% block page_title %}First-run setup{% endblock %}
+{% block content %}
+<div class="auth-panel" style="max-width: 440px;">
+    <div class="auth-head">
+        <p class="auth-kicker">First run</p>
+        <h1 class="auth-title">Create local account</h1>
+        <p class="auth-sub">Runs once on this machine. Works fully offline.</p>
+    </div>
+    <div class="auth-body">
+        <form method="POST" action="{{ url_for('auth.setup') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label class="form-label" for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required minlength="3" maxlength="80" autocomplete="username">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required minlength="8" autocomplete="new-password">
+                <div class="form-text">Minimum 8 characters. Stored hashed — never in plain text.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="confirm">Confirm password</label>
+                <input type="password" class="form-control" id="confirm" name="confirm" required minlength="8" autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Create account</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

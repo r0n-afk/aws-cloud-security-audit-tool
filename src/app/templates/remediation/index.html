@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Remediation Tracking - CSAT{% endblock %}
+{% block page_title %}Remediation Tracking{% endblock %}
+{% block content %}
+<div class="severity-strip">
+    <div class="strip-cell">
+        <p class="strip-label">Open</p>
+        <p class="strip-value {% if progress.open %}is-accent{% endif %}">{{ progress.open }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">In progress</p>
+        <p class="strip-value sev-high">{{ progress.in_progress }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">Resolved</p>
+        <p class="strip-value" style="color: var(--ok);">{{ progress.resolved }}</p>
+    </div>
+    <div class="strip-cell">
+        <p class="strip-label">Verified</p>
+        <p class="strip-value" style="color: var(--info);">{{ progress.verified }}</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="form-label">Overall progress</div>
+        <div class="progress" style="height: 8px;">
+            <div class="progress-bar" style="width: {{ progress.progress_pct }}%; background: var(--ink);"></div>
+        </div>
+        <div class="mono text-muted mt-2" style="font-size: 11px;">{{ "%.1f"|format(progress.progress_pct) }}% complete</div>
+    </div>
+</div>
+
+{% for status_name, status_findings in findings.items() %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><span class="badge bg-{{ status_badge_color(status_name) }} me-2">{{ status_name|replace('_', ' ')|upper }}</span> ({{ status_findings|length }})</h6>
+    </div>
+    <div class="card-body p-0">
+        {% if status_findings %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>ID</th><th>Severity</th><th>Title</th><th>Category</th><th>Action</th></tr></thead>
+                <tbody>
+                    {% for f in status_findings %}
+                    <tr>
+                        <td>{{ f.id }}</td>
+                        <td><span class="badge bg-{{ severity_badge_color(f.severity) }}">{{ f.severity|upper }}</span></td>
+                        <td>{{ f.title }}</td>
+                        <td>{{ f.category }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                {% if status_name != 'open' %}
+                                <button class="btn btn-outline-secondary btn-sm rem-status" data-id="{{ f.id }}" data-status="open">Open</button>
+                                {% endif %}
+                                {% if status_name != 'in_progress' %}
+                                <button class="btn btn-outline-warning btn-sm rem-status" data-id="{{ f.id }}" data-status="in_progress">In Progress</button>
+                                {% endif %}
+                                {% if status_name != 'resolved' %}
+                                <button class="btn btn-outline-success btn-sm rem-status" data-id="{{ f.id }}" data-status="resolved">Resolved</button>
+                                {% endif %}
+                                {% if status_name != 'verified' %}
+                                <button class="btn btn-outline-info btn-sm rem-status" data-id="{{ f.id }}" data-status="verified">Verified</button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted py-3 mb-0" style="padding-left: 16px;">No findings in this status.</p>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.rem-status').forEach(btn => {
+    btn.addEventListener('click', function() {
+        fetch(`/remediation/${this.dataset.id}/status`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: this.dataset.status})
+        })
+        .then(r => r.json())
+        .then(data => { if (data.success) location.reload(); });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Findings - CSAT{% endblock %}
+{% block page_title %}Security Findings{% endblock %}
+{% block content %}
+{% if ai_on %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Ask AI about findings</h6>
+        <small class="text-muted">Rate-limited · optional</small>
+    </div>
+    <div class="card-body">
+        <div class="input-group">
+            <input type="text" class="form-control" id="aiQ" maxlength="500" placeholder="e.g., What are my worst risks right now?">
+            <button class="btn btn-outline-secondary" id="aiQBtn">Ask</button>
+        </div>
+        <div id="aiQOut" class="mt-2" style="display:none;">
+            <pre style="white-space: pre-wrap; font-size: 13px; margin: 0;"></pre>
+        </div>
+    </div>
+</div>
+<script>
+const qBtn = document.getElementById('aiQBtn');
+if (qBtn) {
+    qBtn.addEventListener('click', function() {
+        const q = document.getElementById('aiQ').value.trim();
+        if (!q) return;
+        qBtn.disabled = true;
+        qBtn.textContent = '…';
+        fetch('/ai/qna', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken()},
+            body: JSON.stringify({question: q})
+        })
+        .then(r => r.json())
+        .then(data => {
+            const out = document.getElementById('aiQOut');
+            out.style.display = 'block';
+            out.querySelector('pre').textContent = data.success ? data.answer : ('Error: ' + data.error);
+            qBtn.disabled = false;
+            qBtn.textContent = 'Ask';
+        })
+        .catch(() => { qBtn.disabled = false; qBtn.textContent = 'Ask'; });
+    });
+}
+</script>
+{% endif %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('findings.index') }}" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="search" placeholder="Search findings..." value="{{ filters.search or '' }}">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="severity">
+                    <option value="">All Severities</option>
+                    <option value="critical" {% if filters.severity == 'critical' %}selected{% endif %}>Critical</option>
+                    <option value="high" {% if filters.severity == 'high' %}selected{% endif %}>High</option>
+                    <option value="medium" {% if filters.severity == 'medium' %}selected{% endif %}>Medium</option>
+                    <option value="low" {% if filters.severity == 'low' %}selected{% endif %}>Low</option>
+                    <option value="informational" {% if filters.severity == 'informational' %}selected{% endif %}>Informational</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="category">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="open" {% if filters.status == 'open' %}selected{% endif %}>Open</option>
+                    <option value="in_progress" {% if filters.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="resolved" {% if filters.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                    <option value="verified" {% if filters.status == 'verified' %}selected{% endif %}>Verified</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Filter</button>
+                <a href="{{ url_for('findings.index') }}" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h6 class="mb-0">Findings ({{ pagination.total }})</h6>
+    </div>
+    <div class="card-body p-0">
+        {% if findings %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Severity</th>
+                        <th>Category</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for finding in findings %}
+                    <tr>
+                        <td>{{ finding.id }}</td>
+                        <td><span class="badge bg-{{ severity_badge_color(finding.severity) }}">{{ finding.severity|upper }}</span></td>
+                        <td>{{ finding.category }}</td>
+                        <td><a href="{{ url_for('findings.detail', id=finding.id) }}" class="text-decoration-none">{{ finding.title }}</a></td>
+                        <td><span class="badge bg-{{ status_badge_color(finding.remediation_status) }}">{{ finding.remediation_status }}</span></td>
+                        <td>{{ format_date(finding.created_at) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted py-4 mb-0">No findings found.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination">
+        {% if pagination.has_prev %}
+        <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}&search={{ filters.search or '' }}&severity={{ filters.severity or '' }}&category={{ filters.category or '' }}&status={{ filters.status or '' }}">Previous</a></li>
+        {% endif %}
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <li class="page-item {% if p == pagination.page %}active{% endif %}"><a class="page-link" href="?page={{ p }}&search={{ filters.search or '' }}&severity={{ filters.severity or '' }}&category={{ filters.category or '' }}&status={{ filters.status or '' }}">{{ p }}</a></li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+        {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}&search={{ filters.search or '' }}&severity={{ filters.severity or '' }}&category={{ filters.category or '' }}&status={{ filters.status or '' }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

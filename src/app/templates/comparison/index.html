@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Compare Assessments - CSAT{% endblock %}
+{% block page_title %}Compare Assessments{% endblock %}
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('comparison.compare') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Assessment 1</label>
+                    <select class="form-select" name="assessment1" required>
+                        <option value="">Select First Assessment</option>
+                        {% for a in assessments %}
+                        <option value="{{ a.id }}" {% if id1 == a.id %}selected{% endif %}>{{ a.name }} ({{ format_date(a.assessment_date) }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Assessment 2</label>
+                    <select class="form-select" name="assessment2" required>
+                        <option value="">Select Second Assessment</option>
+                        {% for a in assessments %}
+                        <option value="{{ a.id }}" {% if id2 == a.id %}selected{% endif %}>{{ a.name }} ({{ format_date(a.assessment_date) }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-bar-chart-line"></i> Compare</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if comparison %}
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">{{ comparison.assessment1.name }}</h6>
+            </div>
+            <div class="card-body">
+                <p class="strip-label mb-1">Security score</p>
+                <div class="dossier-score" style="padding: 0; border: none;">
+                    <div class="score-value {% if comparison.assessment1.security_score is not none and comparison.assessment1.security_score < 40 %}is-critical{% endif %}" style="font-size: 56px;">{{ format_score(comparison.assessment1.security_score) }}</div>
+                    <div class="score-meta">/ 100 · {{ comparison.assessment1.total_findings }} findings</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">{{ comparison.assessment2.name }}</h6>
+            </div>
+            <div class="card-body">
+                <p class="strip-label mb-1">Security score</p>
+                <div class="dossier-score" style="padding: 0; border: none;">
+                    <div class="score-value {% if comparison.assessment2.security_score is not none and comparison.assessment2.security_score < 40 %}is-critical{% endif %}" style="font-size: 56px;">{{ format_score(comparison.assessment2.security_score) }}</div>
+                    <div class="score-meta">/ 100 · {{ comparison.assessment2.total_findings }} findings</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0">
+            Score change:
+            <span class="mono {% if comparison.score_diff > 0 %}text-success{% elif comparison.score_diff < 0 %}sev-critical{% else %}text-muted{% endif %}">
+                {% if comparison.score_diff > 0 %}+{% endif %}{{ "%.1f"|format(comparison.score_diff) }}
+            </span>
+            {% if comparison.improved %}
+            <span class="badge bg-success ms-2">Improved</span>
+            {% else %}
+            <span class="badge bg-danger ms-2">Declined</span>
+            {% endif %}
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr><th>Severity</th><th>{{ comparison.assessment1.name }}</th><th>{{ comparison.assessment2.name }}</th><th>Change</th></tr>
+                </thead>
+                <tbody>
+                    {% for sev in ['critical', 'high', 'medium', 'low', 'informational'] %}
+                    <tr>
+                        <td><span class="badge bg-{{ severity_badge_color(sev) }}">{{ sev|upper }}</span></td>
+                        <td>{{ comparison.severity_counts1[sev] }}</td>
+                        <td>{{ comparison.severity_counts2[sev] }}</td>
+                        <td class="{% if comparison.severity_diff[sev] < 0 %}text-success{% elif comparison.severity_diff[sev] > 0 %}text-danger{% endif %}">
+                            {% if comparison.severity_diff[sev] > 0 %}+{% endif %}{{ comparison.severity_diff[sev] }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h6 class="mb-0">Comparison chart</h6></div>
+    <div class="card-body"><canvas id="comparisonChart" height="100"></canvas></div>
+</div>
+{% elif not comparison and id1 and id2 %}
+<div class="alert alert-warning">Could not load comparison data.</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if comparison %}
+<script>
+fetch('/comparison/api/{{ id1 }}/{{ id2 }}')
+.then(r => r.json())
+.then(data => {
+    new Chart(document.getElementById('comparisonChart'), {
+        type: 'bar',
+        data: {
+            labels: data.labels,
+            datasets: [
+                {label: data.names[0], data: data.assessment1, backgroundColor: '#111418'},
+                {label: data.names[1], data: data.assessment2, backgroundColor: '#c8102e'}
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#2c313a' : '#d9d4ca' },
+                    ticks: { color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#9aa1ab' : '#5c6168', font: { family: 'IBM Plex Mono', size: 10 } }
+                },
+                x: {
+                    ticks: { color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#9aa1ab' : '#5c6168', font: { family: 'IBM Plex Mono', size: 10 } }
+                }
+            },
+            plugins: { legend: { labels: { color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#f0ede6' : '#111418', font: { family: 'IBM Plex Mono', size: 11 } } } }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

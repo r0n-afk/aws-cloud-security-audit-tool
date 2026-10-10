@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — CSAT{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-title-block">
+    <p class="kicker">Posture overview</p>
+    <h2>Security Dashboard</h2>
+</div>
+
+{% set sc = stats.security_score %}
+{% set sc_class = 'is-critical' if sc is not none and sc < 40 else '' %}
+<div class="dossier-hero dashboard-card">
+    <div class="dossier-score">
+        <div>
+            <p class="kicker">Security score</p>
+            <div class="score-value {{ sc_class }}" id="security-score">{{ format_score(stats.security_score) }}</div>
+            <div class="score-meta">/ 100 · latest assessment</div>
+        </div>
+        <div>
+            <div class="score-track">
+                <div class="score-fill {{ sc_class }}" style="width: {{ stats.security_score or 0 }}%"></div>
+            </div>
+        </div>
+    </div>
+    <div class="dossier-stats">
+        <div class="dossier-stat">
+            <p class="stat-label">Findings</p>
+            <p class="stat-value">{{ stats.total_findings }}</p>
+            <span class="stat-note">total recorded</span>
+        </div>
+        <div class="dossier-stat">
+            <p class="stat-label">Critical</p>
+            <p class="stat-value {% if stats.critical_count %}is-accent{% endif %}">{{ stats.critical_count }}</p>
+            <span class="stat-note">open severity · critical</span>
+        </div>
+        <div class="dossier-stat">
+            <p class="stat-label">Assessments</p>
+            <p class="stat-value">{{ stats.total_assessments }}</p>
+            <span class="stat-note">scans on record</span>
+        </div>
+    </div>
+</div>
+
+<div class="section-rule"><p class="section-label">Trend</p></div>
+
+<div class="row g-3 mb-1">
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Score trend</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="scoreTrendChart" height="110"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0">Severity mix</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="severityChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section-rule"><p class="section-label">Breakdown</p></div>
+
+<div class="row g-3 mb-1">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0">Findings by category</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0">Remediation status</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="remediationChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section-rule"><p class="section-label">Operations</p></div>
+
+<div class="row g-3">
+    <div class="col-md-5">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0">Quick actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('assessment.new') }}" class="btn btn-primary">Start assessment</a>
+                    <a href="{{ url_for('findings.index') }}" class="btn btn-outline-secondary">Review findings</a>
+                    <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary">Generate report</a>
+                    <a href="{{ url_for('comparison.index') }}" class="btn btn-outline-secondary">Compare assessments</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0">Recent activity</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if activities %}
+                <ul class="list-group list-group-flush">
+                    {% for activity in activities %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-grow-1">
+                            <span class="badge bg-{{ assessment_status_badge(activity.status) }}">{{ activity.status }}</span>
+                            <span>{{ activity.message }}</span>
+                        </div>
+                        <small class="text-muted mono text-nowrap">{{ format_date(activity.date) }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted p-3 mb-0">No activity recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
