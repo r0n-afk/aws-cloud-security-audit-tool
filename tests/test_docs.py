@@ -26,3 +26,26 @@ def test_srs_states_python_version_floor():
     txt = _read('docs', 'SRS.md')
     assert '3.10–3.14' in txt
     assert 'Python 3.10+' not in txt
+
+
+def test_ci_workflow_runs_pytest_on_supported_pythons():
+    txt = _read('.github', 'workflows', 'tests.yml')
+    assert 'pytest tests' in txt
+    assert "'3.10'" in txt and "'3.14'" in txt
+    assert 'windows-latest' in txt and 'ubuntu-latest' in txt
+    assert 'timeout-minutes: 15' in txt
+    assert 'pip-audit' in txt
+
+
+def test_weasyprint_import_stays_lazy():
+    with open(os.path.join(BASE, 'src', 'reports', 'render.py'), encoding='utf-8') as f:
+        for line in f:
+            s = line.strip()
+            if s.startswith('from weasyprint') or s.startswith('import weasyprint'):
+                assert line.startswith(' '), f'weasyprint import must stay inside a function: {s}'
+
+
+def test_readme_links_match_repo_identity():
+    txt = _read('README.md')
+    assert 'github.com/r0n-afk/aws-cloud-security-audit-tool' in txt
+    assert 'github.com/r0n-k/' not in txt

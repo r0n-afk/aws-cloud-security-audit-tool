@@ -1,5 +1,9 @@
 # AWS Cloud Security Audit Tool
 
+[![tests](https://github.com/r0n-afk/aws-cloud-security-audit-tool/actions/workflows/tests.yml/badge.svg)](https://github.com/r0n-afk/aws-cloud-security-audit-tool/actions/workflows/tests.yml)
+[![Python 3.10–3.14](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 A self-hosted web application that audits AWS accounts with **Prowler + ScoutSuite together**, removes redundant findings across the tool, and produces professional HTML / PDF / JSON reports with score tracking and scan comparison.
 
 **Status:** student showcase project (2 contributors) · **Python 3.10–3.14** · Windows / Linux / macOS
