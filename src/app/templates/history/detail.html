@@ -26,6 +26,7 @@
             <div class="col-md-4"><div class="form-label">Assessment date</div>{{ format_date(assessment.assessment_date) }}</div>
             <div class="col-md-4"><div class="form-label">Completion</div>{{ format_date(assessment.completion_date) }}</div>
             <div class="col-md-4"><div class="form-label">Created</div>{{ format_date(assessment.created_at) }}</div>
+            <div class="col-md-4"><div class="form-label">AWS account</div>{% if assessment.aws_account_id %}<span class="mono">{{ assessment.aws_account_id }}</span>{% if assessment.aws_arn %} <span class="text-muted small">({{ assessment.aws_arn }})</span>{% endif %}{% else %}—{% endif %}</div>
         </div>
     </div>
 </div>

@@ -88,3 +88,21 @@ def test_demo_mode_needs_no_credentials():
     assert result['mode'] == 'demo'
     assert result['engines'] == ['demo']
     assert result['findings']
+
+
+def test_demo_scan_result_carries_demo_identity():
+    result = run_scan(mode='demo')
+    assert result['aws_account_id'] == 'demo'
+    assert result['aws_arn'] == ''
+
+
+def test_identity_returns_empty_tuple_on_error(monkeypatch):
+    import boto3
+
+    from scanner import aws_checks
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError('sts down')
+
+    monkeypatch.setattr(boto3.Session, 'client', _boom)
+    assert aws_checks.identity() == ('', '')

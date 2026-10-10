@@ -28,6 +28,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
+                        <th>Account</th>
                         <th>Date</th>
                         <th>Score</th>
                         <th>Findings</th>
@@ -40,6 +41,7 @@
                     <tr>
                         <td>{{ a.id }}</td>
                         <td><a href="{{ url_for('assessment.detail', id=a.id) }}">{{ a.name }}</a></td>
+                        <td>{% if a.aws_account_id %}<span class="badge bg-secondary mono">{{ a.aws_account_id }}</span>{% else %}—{% endif %}</td>
                         <td>{{ format_date(a.assessment_date) }}</td>
                         <td><span class="fw-bold mono {% if a.security_score is not none and a.security_score < 40 %}sev-critical{% endif %}">{{ format_score(a.security_score) }}</span></td>
                         <td>{{ a.total_findings }}</td>

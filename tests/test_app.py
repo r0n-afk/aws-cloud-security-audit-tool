@@ -417,3 +417,21 @@ def test_ensure_identity_columns_noop_on_current_schema(app):
         names = {c['name'] for c in inspect(db.engine).get_columns('assessments')}
     assert 'aws_account_id' in names
     assert 'aws_arn' in names
+
+
+def test_demo_scan_stores_demo_identity(auth_client, app):
+    aid = _demo_scan(auth_client, app, 'Identity Demo')
+    with app.app_context():
+        from app.models.assessment import Assessment
+
+        a = Assessment.query.get(aid)
+        assert a.aws_account_id == 'demo'
+        assert a.aws_arn == ''
+
+
+def test_history_detail_shows_aws_account(auth_client, app):
+    aid = _demo_scan(auth_client, app, 'Identity Show')
+    r = auth_client.get('/history/%d' % aid)
+    body = r.get_data(as_text=True)
+    assert 'AWS account' in body
+    assert 'demo' in body

@@ -238,6 +238,16 @@ def run_boto3_checks(region=None):
     return findings
 
 
+def identity():
+    """Best-effort STS GetCallerIdentity for scan attribution. Never raises, never blocks a scan."""
+    try:
+        import boto3
+        ident = boto3.Session().client('sts').get_caller_identity()
+        return ident.get('Account') or '', ident.get('Arn') or ''
+    except Exception:
+        return '', ''
+
+
 def has_credentials(region=None):
     try:
         import boto3

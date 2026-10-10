@@ -70,6 +70,8 @@ def run_assessment(assessment_id):
         assessment.completion_date = datetime.utcnow()
         assessment.status = 'completed'
         assessment.engines_used = ','.join(scan_result.get('engines', []))[:200]
+        assessment.aws_account_id = str(scan_result.get('aws_account_id', ''))[:20]
+        assessment.aws_arn = str(scan_result.get('aws_arn', ''))[:200]
         assessment.raw_count = analysis['raw_count']
         assessment.deduped_count = analysis['deduped_count']
         assessment.total_findings = analysis['deduped_count']

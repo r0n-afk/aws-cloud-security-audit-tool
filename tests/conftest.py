@@ -48,6 +48,16 @@ def app():
         cfg.REPORTS_FOLDER = old_reports
 
 
+@pytest.fixture(autouse=True)
+def _reset_scan_rate_limit():
+    """Module-global counter in assessment/routes must not leak across tests."""
+    from app.modules.assessment import routes as _ar
+
+    _ar._rate_window['start'] = None
+    _ar._rate_window['count'] = 0
+    yield
+
+
 @pytest.fixture()
 def client(app):
     return app.test_client()

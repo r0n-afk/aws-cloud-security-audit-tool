@@ -20,6 +20,8 @@ def run_scan(mode='aws', timeout=1800):
             'engines': ['demo'],
             'raw_count': len(raw),
             'mode': 'demo',
+            'aws_account_id': 'demo',
+            'aws_arn': '',
             'errors': [],
         }
 
@@ -28,6 +30,8 @@ def run_scan(mode='aws', timeout=1800):
             'No AWS credentials found. Run `aws configure` or set '
             'AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY, then retry.'
         )
+
+    account, arn = aws_checks.identity()
 
     engines = []
     raw = []
@@ -69,5 +73,7 @@ def run_scan(mode='aws', timeout=1800):
         'engines': engines,
         'raw_count': len(raw),
         'mode': 'aws',
+        'aws_account_id': account,
+        'aws_arn': arn,
         'errors': errors,
     }
