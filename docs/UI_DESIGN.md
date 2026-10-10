@@ -73,7 +73,7 @@ One `base.html` owns shell chrome; module templates extend it.
 ### 3.4 New assessment (`assessment/new.html`)
 
 - Single form: name (required), description (optional).
-- Assessment new form shows the current scan mode banner (AWS or demo catalog) without exposing mode controls.
+- Assessment new form shows the current scan mode banner (AWS or demo catalog). The mode control lives in Settings → Application Settings → Scanner mode.
 - Primary: Run assessment. Secondary: Cancel.
 - On AWS mode, helper text mentions credential expectation (hard error if missing — copy links to error message).
 

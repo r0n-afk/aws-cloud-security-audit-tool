@@ -87,14 +87,19 @@ def test_settings_scanner_mode_toggle(auth_client, app):
         assert get_setting('scanner_mode') == 'demo'
 
 
-def test_settings_dev_scanner_panel_hidden_by_default(auth_client):
+def test_settings_scanner_mode_visible_by_default(auth_client):
     page = auth_client.get('/settings/')
     html = page.get_data(as_text=True)
     assert 'id="devScannerMode"' in html
-    assert 'hidden data-dev-panel' in html or 'data-dev-panel' in html
-    # no visible scanner_mode select outside the hidden panel
-    assert 'name="setting_scanner_mode"' in html
-    assert 'Scanner mode' not in html.split('devScannerMode', 1)[0]
+    assert 'data-dev-panel' not in html
+    assert '>Scanner mode<' in html
+    assert 'Demo mode runs without AWS credentials' in html
+
+
+def test_settings_scanner_mode_in_app_save_dirty_list(auth_client):
+    page = auth_client.get('/settings/')
+    html = page.get_data(as_text=True)
+    assert "'setting_scanner_mode'" in html
 
 
 def test_settings_shows_claude_gateway_rebrand(auth_client):
