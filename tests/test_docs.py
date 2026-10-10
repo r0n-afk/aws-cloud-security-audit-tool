@@ -49,3 +49,12 @@ def test_readme_links_match_repo_identity():
     txt = _read('README.md')
     assert 'github.com/r0n-afk/aws-cloud-security-audit-tool' in txt
     assert 'github.com/r0n-k/' not in txt
+
+
+def test_readme_image_links_resolve():
+    import re
+    txt = _read('README.md')
+    for rel in re.findall(r'!\[[^\]]*\]\(([^)]+)\)', txt):
+        if rel.startswith(('http://', 'https://')):
+            continue
+        assert os.path.exists(os.path.join(BASE, rel)), f'broken image: {rel}'

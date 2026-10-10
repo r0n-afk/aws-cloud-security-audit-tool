@@ -21,6 +21,14 @@ A self-hosted web application that audits AWS accounts with **Prowler + ScoutSui
 - **Optional AI** (OFF by default) — finding summaries, remediation advice, risk prioritization, natural-language Q&A against stored findings. Any OpenAI-compatible endpoint (incl. local Ollama). **HTTPS-only** base URL (local Ollama exception). Base URL + token required to enable. Rate limited: 10/min · 100/day · 1 concurrent.
 - **Local offline auth** — first-run `/auth/setup` creates the single account (hashed password in SQLite); login required every session; localhost binding only.
 
+## Screenshots
+
+| Dashboard | Findings |
+|-----------|----------|
+| ![Dashboard](docs/images/dashboard.png) | ![Findings](docs/images/findings.png) |
+
+![Settings](docs/images/settings.png)
+
 ## Quick start
 
 ### Windows
