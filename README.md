@@ -2,7 +2,7 @@
 
 A self-hosted web application that audits AWS accounts with **Prowler + ScoutSuite together**, removes redundant findings across the tool, and produces professional HTML / PDF / JSON reports with score tracking and scan comparison.
 
-**Status:** student showcase project (2 contributors) · **Python 3.10+** · Windows / Linux / macOS
+**Status:** student showcase project (2 contributors) · **Python 3.10–3.14** · Windows / Linux / macOS
 
 **Authors:** [Rohan Kolte (@r0n-afk)](https://github.com/r0n-afk) · [genrex-bot](https://github.com/genrex-bot)
 
@@ -54,6 +54,8 @@ python run.py
 ```
 
 First open → **`/auth/setup`** → create username + password → login.
+
+> **Python note:** 3.10–3.14 supported. Python 3.15 is not yet supported — some pinned dependencies ship no prebuilt wheels, so `pip install` fails without a C compiler.
 
 ### Real AWS (primary path)
 

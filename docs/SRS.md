@@ -55,7 +55,7 @@ Cloud environments accumulate misconfigurations (over-permissive IAM, public buc
 
 ### 4.2 Operating environment
 
-- Python 3.10+ · Flask 3 · SQLite (Flask-SQLAlchemy)
+- Python 3.10–3.14 · Flask 3 · SQLite (Flask-SQLAlchemy)
 - Windows / Linux / macOS · localhost binding (`127.0.0.1:5000`)
 - Optional binaries: Prowler, ScoutSuite, WeasyPrint system libs, OpenAI-compatible endpoint
 
