@@ -10,6 +10,17 @@ from config import config
 from app.extensions import db, csrf
 
 
+def ensure_identity_columns(engine):
+    """Add scan-identity columns to pre-existing SQLite DBs (idempotent)."""
+    from sqlalchemy import inspect, text
+    cols = {c['name'] for c in inspect(engine).get_columns('assessments')}
+    with engine.begin() as conn:
+        if 'aws_account_id' not in cols:
+            conn.execute(text('ALTER TABLE assessments ADD COLUMN aws_account_id VARCHAR(20)'))
+        if 'aws_arn' not in cols:
+            conn.execute(text('ALTER TABLE assessments ADD COLUMN aws_arn VARCHAR(200)'))
+
+
 def create_app(config_name='default'):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config[config_name])
@@ -102,6 +113,7 @@ def create_app(config_name='default'):
             return None
 
         db.create_all()
+        ensure_identity_columns(db.engine)
 
         from app.modules.settings.services import init_default_settings
         init_default_settings()

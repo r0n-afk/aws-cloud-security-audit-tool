@@ -19,6 +19,8 @@ class Assessment(db.Model):
     informational_count = db.Column(db.Integer, default=0)
     status = db.Column(db.String(20), nullable=False, default='pending')
     engines_used = db.Column(db.String(200), default='')
+    aws_account_id = db.Column(db.String(20), default='')
+    aws_arn = db.Column(db.String(200), default='')
     raw_count = db.Column(db.Integer, default=0)
     deduped_count = db.Column(db.Integer, default=0)
     scan_error = db.Column(db.Text)

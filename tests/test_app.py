@@ -376,3 +376,44 @@ def test_dashboard_has_no_engine_names(auth_client, app):
             assert 'scoutsuite' not in detail
             assert ' via ' not in detail
     assert aid
+
+
+def test_assessment_has_identity_columns():
+    from app.models.assessment import Assessment
+
+    assert hasattr(Assessment, 'aws_account_id')
+    assert hasattr(Assessment, 'aws_arn')
+
+
+def test_ensure_identity_columns_adds_missing_and_is_idempotent(tmp_path):
+    import sqlite3
+
+    from sqlalchemy import create_engine, inspect
+
+    from app import ensure_identity_columns
+
+    dbfile = tmp_path / 'legacy.db'
+    conn = sqlite3.connect(dbfile)
+    conn.execute('CREATE TABLE assessments (id INTEGER PRIMARY KEY, name VARCHAR(200))')
+    conn.commit()
+    conn.close()
+
+    eng = create_engine(f'sqlite:///{dbfile}')
+    ensure_identity_columns(eng)
+    ensure_identity_columns(eng)
+    names = {c['name'] for c in inspect(eng).get_columns('assessments')}
+    assert 'aws_account_id' in names
+    assert 'aws_arn' in names
+
+
+def test_ensure_identity_columns_noop_on_current_schema(app):
+    from sqlalchemy import inspect
+
+    from app import ensure_identity_columns
+    from app.extensions import db
+
+    with app.app_context():
+        ensure_identity_columns(db.engine)
+        names = {c['name'] for c in inspect(db.engine).get_columns('assessments')}
+    assert 'aws_account_id' in names
+    assert 'aws_arn' in names
