@@ -149,11 +149,13 @@ SECURITY.md            threat model, hardening checklist, reporting
 
 ```bat
 :: Windows
+pip install -r requirements-dev.txt
 python -m pytest tests -q
 ```
 
 ```bash
 # Linux
+pip install -r requirements-dev.txt
 python -m pytest tests -q
 ```
 
