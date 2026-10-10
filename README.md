@@ -193,6 +193,7 @@ python -m pytest tests -q
 | [docs/WORKFLOW.md](docs/WORKFLOW.md) | User journeys end-to-end |
 | [docs/UI_DESIGN.md](docs/UI_DESIGN.md) | Screens, layout, design constraints |
 | [SECURITY.md](SECURITY.md) | Security model & reporting |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Setup, tests, and contribution guide |
 
 ## License
 

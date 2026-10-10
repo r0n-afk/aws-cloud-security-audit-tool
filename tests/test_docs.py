@@ -58,3 +58,10 @@ def test_readme_image_links_resolve():
         if rel.startswith(('http://', 'https://')):
             continue
         assert os.path.exists(os.path.join(BASE, rel)), f'broken image: {rel}'
+
+
+def test_contributing_documents_maintainer_split():
+    txt = _read('CONTRIBUTING.md')
+    assert 'r0n-afk' in txt and 'genrex-bot' in txt
+    assert 'requirements-dev.txt' in txt
+    assert 'pytest tests' in txt
