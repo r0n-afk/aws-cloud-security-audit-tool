@@ -1,9 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from flask import current_app, render_template, request, redirect, url_for, flash, jsonify
 from app.modules.assessment import assessment_bp
 from app.modules.assessment.services import create_assessment, get_assessment, run_assessment, get_assessment_status
-from app.models.audit import log_event
 
 _rate_window = {'start': None, 'count': 0}
 

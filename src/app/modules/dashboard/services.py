@@ -1,4 +1,3 @@
-from app.extensions import db
 from app.models.assessment import Assessment
 from app.models.finding import Finding
 from app.utils.helpers import mode_filter

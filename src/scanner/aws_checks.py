@@ -28,7 +28,7 @@ def _client(session, service, region=None):
 
 def run_boto3_checks(region=None):
     import boto3
-    from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError, PartialCredentialsError
+    from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 
     try:
         session = boto3.Session()

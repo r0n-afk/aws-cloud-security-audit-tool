@@ -39,9 +39,6 @@ def get_comparison_chart_data(id1, id2):
     if not a1 or not a2:
         return None
 
-    f1 = Finding.query.filter_by(assessment_id=id1).all()
-    f2 = Finding.query.filter_by(assessment_id=id2).all()
-
     return {
         'labels': ['Score', 'Critical', 'High', 'Medium', 'Low', 'Info'],
         'assessment1': [a1.security_score, a1.critical_count, a1.high_count, a1.medium_count, a1.low_count, a1.informational_count],

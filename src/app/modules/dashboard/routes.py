@@ -1,4 +1,3 @@
-import json
 from flask import render_template, jsonify
 from app.modules.dashboard import dashboard_bp
 from app.modules.dashboard.services import get_dashboard_stats, get_chart_data, get_recent_activity

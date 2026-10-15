@@ -2,8 +2,6 @@
 import time
 from datetime import datetime, timezone
 
-from app.extensions import db
-from app.models.setting import Setting
 
 DEFAULT_LIMIT_MINUTE = 10
 DEFAULT_LIMIT_DAY = 100
