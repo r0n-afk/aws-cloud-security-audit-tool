@@ -1,20 +1,63 @@
 import json
 import os
+from unittest import mock
 
 from tests.conftest import get_csrf
 
+_CANNED_FINDINGS = [
+    {
+        'engine': 'prowler', 'control_id': 'iam-root-mfa', 'severity': 'critical',
+        'category': 'Identity and Access Management', 'title': 'Root account MFA disabled',
+        'description': 'Root account has no MFA.', 'recommendation': 'Enable MFA on the root account.',
+        'resource': 'arn:aws:iam::123456789012:root',
+    },
+    {
+        'engine': 'scoutsuite', 'control_id': 'iam-root-mfa', 'severity': 'high',
+        'category': 'Identity and Access Management', 'title': 'Root account MFA disabled',
+        'description': 'Root account has no MFA (scoutsuite).', 'recommendation': 'Enable MFA on the root account.',
+        'resource': 'arn:aws:iam::123456789012:root',
+    },
+    {
+        'engine': 'prowler', 'control_id': 's3-bucket-logging', 'severity': 'medium',
+        'category': 'Storage', 'title': 'S3 bucket access logging disabled',
+        'description': 'Server access logging is not enabled.', 'recommendation': 'Enable bucket logging.',
+        'resource': 'arn:aws:s3:::example-bucket',
+    },
+    {
+        'engine': 'prowler', 'control_id': 'ec2-sg-open-ingress', 'severity': 'low',
+        'category': 'Network Security', 'title': 'Security group allows unrestricted ingress',
+        'description': 'A security group permits ingress from 0.0.0.0/0.', 'recommendation': 'Restrict CIDR ranges.',
+        'resource': 'arn:aws:ec2:us-east-1:123456789012:security-group/sg-1',
+    },
+    {
+        'engine': 'scoutsuite', 'control_id': 'cloudtrail-enabled', 'severity': 'informational',
+        'category': 'Logging and Monitoring', 'title': 'CloudTrail is enabled',
+        'description': 'CloudTrail logging is active.', 'recommendation': 'Keep CloudTrail enabled.',
+        'resource': 'arn:aws:cloudtrail:us-east-1:123456789012:trail/main',
+    },
+]
 
-def _demo_scan(auth_client, app, name='Route Scan'):
-    from app.modules.settings.services import update_setting
 
-    with app.app_context():
-        update_setting('scanner_mode', 'demo')
+def _fake_run_scan(timeout=1800):
+    return {
+        'findings': list(_CANNED_FINDINGS),
+        'engines': ['prowler', 'scoutsuite'],
+        'raw_count': len(_CANNED_FINDINGS),
+        'mode': 'aws',
+        'aws_account_id': '123456789012',
+        'aws_arn': 'arn:aws:iam::123456789012:root',
+        'errors': [],
+    }
+
+
+def _scan(auth_client, app, name='Route Scan'):
     page = auth_client.get('/assessment/new')
     token = get_csrf(page.data)
-    r = auth_client.post(
-        '/assessment/create',
-        data={'name': name, 'description': 'test', 'csrf_token': token},
-    )
+    with mock.patch('scanner.orchestrator.run_scan', _fake_run_scan):
+        r = auth_client.post(
+            '/assessment/create',
+            data={'name': name, 'description': 'test', 'csrf_token': token},
+        )
     assert r.status_code == 302
     with app.app_context():
         from app.models.assessment import Assessment
@@ -23,7 +66,7 @@ def _demo_scan(auth_client, app, name='Route Scan'):
 
 
 def test_full_module_smoke(auth_client, app):
-    aid = _demo_scan(auth_client, app)
+    aid = _scan(auth_client, app)
     for path in (
         '/',
         '/assessment/%d' % aid,
@@ -39,7 +82,7 @@ def test_full_module_smoke(auth_client, app):
 
 
 def test_report_html_and_json(auth_client, app, tmp_path):
-    aid = _demo_scan(auth_client, app, 'Report Scan')
+    aid = _scan(auth_client, app, 'Report Scan')
     with app.app_context():
         from app.modules.reports.services import generate_report
 
@@ -60,7 +103,7 @@ def test_report_html_and_json(auth_client, app, tmp_path):
 
 
 def test_download_path_traversal_guard(auth_client, app):
-    aid = _demo_scan(auth_client, app, 'Traversal')
+    aid = _scan(auth_client, app, 'Traversal')
     with app.app_context():
         from app.models.report import Report
         from app.extensions import db
@@ -71,35 +114,6 @@ def test_download_path_traversal_guard(auth_client, app):
         db.session.commit()
         rid = r.id
         assert download_report(rid) is None
-
-
-def test_settings_scanner_mode_toggle(auth_client, app):
-    page = auth_client.get('/settings/')
-    token = get_csrf(page.data)
-    r = auth_client.post(
-        '/settings/update',
-        data={'setting_scanner_mode': 'demo', 'csrf_token': token},
-    )
-    assert r.status_code == 302
-    with app.app_context():
-        from app.modules.settings.services import get_setting
-
-        assert get_setting('scanner_mode') == 'demo'
-
-
-def test_settings_scanner_mode_visible_by_default(auth_client):
-    page = auth_client.get('/settings/')
-    html = page.get_data(as_text=True)
-    assert 'id="devScannerMode"' in html
-    assert 'data-dev-panel' not in html
-    assert '>Scanner mode<' in html
-    assert 'Demo mode runs without AWS credentials' in html
-
-
-def test_settings_scanner_mode_in_app_save_dirty_list(auth_client):
-    page = auth_client.get('/settings/')
-    html = page.get_data(as_text=True)
-    assert "'setting_scanner_mode'" in html
 
 
 def test_settings_shows_claude_gateway_rebrand(auth_client):
@@ -171,33 +185,6 @@ def test_settings_app_update_saves_four_fields(auth_client, app):
         assert get_setting('findings_per_page') == '10'
         # AI settings untouched by app-settings form post
         assert get_setting('ai_enabled') != 'true'
-
-
-def test_mode_filter_hides_other_mode_results(auth_client, app):
-    from app.extensions import db
-    from app.models.assessment import Assessment
-    from app.modules.settings.services import update_setting
-
-    with app.app_context():
-        demo = Assessment(name='mode-demo-a', status='completed', engines_used='demo')
-        real = Assessment(name='mode-real-a', status='completed', engines_used='prowler,scoutsuite')
-        db.session.add_all([demo, real])
-        db.session.commit()
-        did, rid = demo.id, real.id
-
-        update_setting('scanner_mode', 'demo')
-    html = auth_client.get('/history/').get_data(as_text=True)
-    assert 'mode-demo-a' in html and 'mode-real-a' not in html
-    assert auth_client.get('/assessment/%d' % rid).status_code == 404
-    assert auth_client.get('/assessment/%d' % did).status_code == 200
-
-    with app.app_context():
-        update_setting('scanner_mode', 'aws')
-    html = auth_client.get('/history/').get_data(as_text=True)
-    assert 'mode-real-a' in html and 'mode-demo-a' not in html
-    assert auth_client.get('/assessment/%d' % did).status_code == 404
-    assert auth_client.get('/assessment/%d' % rid).status_code == 200
-    assert auth_client.get('/findings/').status_code == 200
 
 
 def test_settings_save_btn_shows_when_ai_on(auth_client, app):
@@ -324,10 +311,6 @@ def test_settings_aws_test_endpoint(auth_client):
 
 
 def test_assessment_new_aws_help_no_engine_sentence(auth_client, app):
-    from app.modules.settings.services import update_setting
-
-    with app.app_context():
-        update_setting('scanner_mode', 'aws')
     page = auth_client.get('/assessment/new')
     html = page.get_data(as_text=True)
     assert 'How do I set up AWS?' in html
@@ -338,10 +321,6 @@ def test_assessment_new_aws_help_no_engine_sentence(auth_client, app):
 
 
 def test_assessment_new_aws_banner_permanent(auth_client, app):
-    from app.modules.settings.services import update_setting
-
-    with app.app_context():
-        update_setting('scanner_mode', 'aws')
     page = auth_client.get('/assessment/new')
     html = page.get_data(as_text=True)
     assert 'AWS assessment:' in html
@@ -361,7 +340,7 @@ def test_main_js_skips_permanent_alerts():
 
 
 def test_dashboard_has_no_engine_names(auth_client, app):
-    aid = _demo_scan(auth_client, app, 'Dash Engines')
+    aid = _scan(auth_client, app, 'Dash Engines')
     r = auth_client.get('/')
     assert r.status_code == 200
     html = r.get_data(as_text=True).lower()
@@ -419,19 +398,19 @@ def test_ensure_identity_columns_noop_on_current_schema(app):
     assert 'aws_arn' in names
 
 
-def test_demo_scan_stores_demo_identity(auth_client, app):
-    aid = _demo_scan(auth_client, app, 'Identity Demo')
+def test_scan_stores_aws_identity(auth_client, app):
+    aid = _scan(auth_client, app, 'Identity Real')
     with app.app_context():
         from app.models.assessment import Assessment
 
         a = Assessment.query.get(aid)
-        assert a.aws_account_id == 'demo'
-        assert a.aws_arn == ''
+        assert a.aws_account_id == '123456789012'
+        assert a.aws_arn == 'arn:aws:iam::123456789012:root'
 
 
 def test_history_detail_shows_aws_account(auth_client, app):
-    aid = _demo_scan(auth_client, app, 'Identity Show')
+    aid = _scan(auth_client, app, 'Identity Show')
     r = auth_client.get('/history/%d' % aid)
     body = r.get_data(as_text=True)
     assert 'AWS account' in body
-    assert 'demo' in body
+    assert '123456789012' in body

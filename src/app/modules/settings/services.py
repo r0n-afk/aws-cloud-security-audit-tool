@@ -7,7 +7,6 @@ DEFAULT_SETTINGS = {
     'theme': {'value': 'light', 'description': 'UI theme'},
     'assessments_per_page': {'value': '20', 'description': 'Assessments per page'},
     'findings_per_page': {'value': '20', 'description': 'Findings per page'},
-    'scanner_mode': {'value': 'aws', 'description': ''},
     'ai_enabled': {'value': 'false', 'description': 'AI Integration gateway (Developer Mode; default off)'},
     'ai_base_url': {'value': 'https://api.openai.com/v1', 'description': 'Gateway base URL — OpenAI-compatible, HTTPS required (loopback allowed)'},
     'ai_api_key': {'value': '', 'description': 'Gateway token (stored locally, never committed)'},

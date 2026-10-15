@@ -22,8 +22,7 @@ def _scan_rate_limited():
 
 @assessment_bp.route('/new')
 def new():
-    from app.modules.settings.services import get_setting
-    return render_template('assessment/new.html', scanner_mode=get_setting('scanner_mode', 'aws'))
+    return render_template('assessment/new.html')
 
 
 @assessment_bp.route('/create', methods=['POST'])

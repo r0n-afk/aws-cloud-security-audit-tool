@@ -49,8 +49,6 @@ def update():
             if value.strip() == '':
                 updates[setting_key] = ''
                 continue
-        if setting_key == 'scanner_mode' and value not in ('aws', 'demo'):
-            continue
         updates[setting_key] = value
 
     if ai_enabled_next == 'true':

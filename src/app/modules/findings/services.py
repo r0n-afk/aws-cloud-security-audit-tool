@@ -1,14 +1,11 @@
 from app.extensions import db
 from app.models.assessment import Assessment
 from app.models.finding import Finding
-from app.utils.helpers import mode_filter, mode_visible
 from app.utils.validators import validate_severity, validate_status
 
 
 def _base():
-    return Finding.query.join(Assessment, Finding.assessment_id == Assessment.id).filter(
-        mode_filter(Assessment)
-    )
+    return Finding.query.join(Assessment, Finding.assessment_id == Assessment.id)
 
 
 def get_findings(assessment_id=None, severity=None, category=None, status=None, search=None, page=1, per_page=20):
@@ -38,7 +35,7 @@ def get_findings(assessment_id=None, severity=None, category=None, status=None, 
 
 def get_finding(finding_id):
     finding = Finding.query.get_or_404(finding_id)
-    if not finding.assessment or not mode_visible(finding.assessment):
+    if not finding.assessment:
         from flask import abort
         abort(404)
     return finding

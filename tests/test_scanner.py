@@ -1,24 +1,9 @@
 import json
 import os
 
-from scanner import demo
 from scanner.prowler_engine import parse_output as parse_prowler
 from scanner.scoutsuite_engine import parse_output as parse_scout
 from scanner.orchestrator import CredentialsError, run_scan
-
-
-def test_demo_returns_findings():
-    findings = demo.run_demo(probability=1.0)
-    assert len(findings) >= 20
-    assert all(f['engine'] == 'demo' for f in findings)
-
-
-def test_demo_empty_floor():
-    import random
-
-    findings = demo.run_demo(probability=0.0, rng=random.Random(1))
-    assert len(findings) == 1
-    assert findings[0]['severity'] == 'informational'
 
 
 def test_prowler_fixture_parse(tmp_path):
@@ -77,23 +62,10 @@ def test_aws_mode_without_credentials_raises(monkeypatch):
     monkeypatch.setattr(aws, 'has_credentials', lambda region=None: False)
     monkeypatch.setattr('scanner.orchestrator.aws_checks.has_credentials', lambda region=None: False)
     try:
-        run_scan(mode='aws')
+        run_scan()
         raise AssertionError('expected CredentialsError')
     except CredentialsError as exc:
         assert 'credentials' in str(exc).lower()
-
-
-def test_demo_mode_needs_no_credentials():
-    result = run_scan(mode='demo')
-    assert result['mode'] == 'demo'
-    assert result['engines'] == ['demo']
-    assert result['findings']
-
-
-def test_demo_scan_result_carries_demo_identity():
-    result = run_scan(mode='demo')
-    assert result['aws_account_id'] == 'demo'
-    assert result['aws_arn'] == ''
 
 
 def test_identity_returns_empty_tuple_on_error(monkeypatch):

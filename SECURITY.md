@@ -31,7 +31,7 @@
 - Use a **read-only** IAM principal (AWS managed policy `SecurityAudit`).
 - Preferred sources, in order: environment variables → shared credentials file (`~/.aws/credentials`) → instance profile (if any).
 - Never commit `.aws/`, `credentials`, `*.pem`, `*.key`, `.env` (already in `.gitignore`).
-- `CredentialsError` is raised in AWS mode when no credentials are found — the app does **not** fall back to demo silently.
+- `CredentialsError` is raised when no credentials are found — the app **hard-fails** rather than substituting simulated results.
 
 ## Scanner sandbox
 

@@ -38,7 +38,7 @@ Sidebar (left ink rail) confirmed; light+dark both supported; dashboard keeps ty
     Comparison
     Remediation
     Settings
-  + identity (user, logout) · mode badge (aws|demo) · AI indicator (if on)
+  + identity (user, logout) · AI indicator (if on)
         │
         ▼
 Module screens (below)
@@ -73,9 +73,8 @@ One `base.html` owns shell chrome; module templates extend it.
 ### 3.4 New assessment (`assessment/new.html`)
 
 - Single form: name (required), description (optional).
-- Assessment new form shows the current scan mode banner (AWS or demo catalog). The mode control lives in Settings → Application Settings → Scanner mode.
 - Primary: Run assessment. Secondary: Cancel.
-- On AWS mode, helper text mentions credential expectation (hard error if missing — copy links to error message).
+- Helper text mentions credential expectation (hard error if missing — copy links to error message).
 
 ### 3.5 Assessment detail (`assessment/detail.html`)
 

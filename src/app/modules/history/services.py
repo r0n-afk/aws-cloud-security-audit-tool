@@ -1,9 +1,8 @@
 from app.models.assessment import Assessment
-from app.utils.helpers import mode_filter, mode_visible
 
 
 def get_all_assessments(search=None, page=1, per_page=20):
-    query = Assessment.query.filter(mode_filter(Assessment))
+    query = Assessment.query
 
     if search:
         search_term = f'%{search}%'
@@ -14,8 +13,4 @@ def get_all_assessments(search=None, page=1, per_page=20):
 
 
 def get_assessment_detail(assessment_id):
-    assessment = Assessment.query.get_or_404(assessment_id)
-    if not mode_visible(assessment):
-        from flask import abort
-        abort(404)
-    return assessment
+    return Assessment.query.get_or_404(assessment_id)

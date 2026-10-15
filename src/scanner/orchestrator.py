@@ -1,7 +1,7 @@
-"""Scan orchestrator: mode gate → creds probe → Prowler + ScoutSuite (both) → boto3 fallback / demo."""
+"""Scan orchestrator: creds probe -> Prowler + ScoutSuite (both) -> boto3 fallback."""
 import subprocess
 
-from scanner import prowler_engine, scoutsuite_engine, aws_checks, demo
+from scanner import prowler_engine, scoutsuite_engine, aws_checks
 
 
 class EngineUnavailableError(Exception):
@@ -12,19 +12,7 @@ class CredentialsError(Exception):
     pass
 
 
-def run_scan(mode='aws', timeout=1800):
-    if mode == 'demo':
-        raw = demo.run_demo()
-        return {
-            'findings': raw,
-            'engines': ['demo'],
-            'raw_count': len(raw),
-            'mode': 'demo',
-            'aws_account_id': 'demo',
-            'aws_arn': '',
-            'errors': [],
-        }
-
+def run_scan(timeout=1800):
     if not aws_checks.has_credentials():
         raise CredentialsError(
             'No AWS credentials found. Run `aws configure` or set '

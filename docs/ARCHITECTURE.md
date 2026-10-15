@@ -29,7 +29,7 @@ Browser (127.0.0.1:5000)
    prowler_engine        score/prioritize     rate_limit.py
    scoutsuite_engine                           │
    aws_checks (boto3)                           ▼
-   demo                src/reports        OpenAI-compatible
+                      src/reports        OpenAI-compatible
         │              render.py          endpoint (HTTPS)
         ▼              HTML/PDF/JSON
   subprocess / boto3
@@ -56,15 +56,15 @@ Browser (127.0.0.1:5000)
 | Remediation | `modules/remediation` | Status updates across findings |
 | Settings | `modules/settings` | Theme, report format, AI config (masked secrets), limits |
 | AI routes | `modules/ai` | remediate / prioritize / qna endpoints (feature-flagged) |
-| Orchestrator | `src/scanner/orchestrator.py` | Mode gate → creds probe → dual engines → boto3 fallback / demo |
-| Engines | `prowler_engine`, `scoutsuite_engine`, `aws_checks`, `demo` | Produce raw finding dicts |
+| Orchestrator | `src/scanner/orchestrator.py` | Creds probe → dual engines → boto3 fallback |
+| Engines | `prowler_engine`, `scoutsuite_engine`, `aws_checks` | Produce raw finding dicts |
 | Analyzer | `src/analyzer` | Normalize severity, dedupe (key = control+resource), score, prioritize |
 | AI client | `src/ai` | OpenAI-compatible chat; rate limiter (min/day/concurrent) |
 | Renderer | `src/reports/render.py` | Dossier-style HTML; WeasyPrint PDF optional; JSON dump |
 
 ---
 
-## 3. Scan pipeline (AWS mode)
+## 3. Scan pipeline
 
 ```text
 POST /assessment/create
@@ -73,13 +73,11 @@ POST /assessment/create
 run_assessment()
         │  status = running
         ▼
-orchestrator.run_scan(mode)
+orchestrator.run_scan()
         │
-        ├─ mode == demo? ──► demo.run_demo() ──────────────┐
-        │                                                  │
-        ├─ has_credentials()?  NO ──► CredentialsError     │
-        │                                                  │
-        ├─ Prowler available?  yes ──► subprocess + parse ──┤
+        ├─ has_credentials()?  NO ──► CredentialsError
+        │
+        ├─ Prowler available?  yes ──► subprocess + parse ──┐
         ├─ ScoutSuite available? yes ► subprocess + parse ─┤
         │                                                  │
         ├─ both missing ──► boto3 checks ──────────────────┤
@@ -162,8 +160,7 @@ HTTPS base URL validate ──► OpenAI-compatible chat
 | Mode | How |
 |------|-----|
 | Dev | `python run.py` → Flask dev server, `FLASK_DEBUG=1` optional |
-| Demo showcase | Simulated catalog findings; no AWS/scanners needed |
-| Real audit | `aws configure` + Prowler and/or ScoutSuite installed; mode = aws |
+| Real audit | `aws configure` + Prowler and/or ScoutSuite installed |
 
 **Not supported in v1:** multi-worker WSGI behind public internet without additional hardening (see `SECURITY.md`).
 

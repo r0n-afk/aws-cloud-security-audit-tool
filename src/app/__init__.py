@@ -21,6 +21,18 @@ def ensure_identity_columns(engine):
             conn.execute(text('ALTER TABLE assessments ADD COLUMN aws_arn VARCHAR(200)'))
 
 
+def _purge_removed_demo_data():
+    """One-time cleanup: Demo scanner mode was removed. Delete leftover demo
+    assessments (ORM delete cascades findings/reports) and the stale setting."""
+    from app.models.assessment import Assessment
+    from app.models.setting import Setting
+
+    for a in Assessment.query.filter(Assessment.engines_used == 'demo').all():
+        db.session.delete(a)
+    Setting.query.filter_by(key='scanner_mode').delete(synchronize_session=False)
+    db.session.commit()
+
+
 def create_app(config_name='default'):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config[config_name])
@@ -84,15 +96,13 @@ def create_app(config_name='default'):
             from flask import session
             try:
                 ai_on = str(get_setting('ai_enabled', 'false')).lower() == 'true'
-                scanner_mode = get_setting('scanner_mode', 'aws')
             except Exception:
                 ai_on = False
-                scanner_mode = 'aws'
             user = None
             if session.get('user_id'):
                 user = db.session.get(User, session.get('user_id'))
             return dict(theme=get_setting('theme', 'light'), ai_on=ai_on,
-                        scanner_mode=scanner_mode, current_user=user)
+                        current_user=user)
 
         @app.before_request
         def _enforce_local_auth():
@@ -117,6 +127,7 @@ def create_app(config_name='default'):
 
         from app.modules.settings.services import init_default_settings
         init_default_settings()
+        _purge_removed_demo_data()
 
         if app.debug:
             from flask import request as _req

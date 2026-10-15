@@ -76,15 +76,6 @@
                     </div>
                     {% endfor %}
 
-                    <div id="devScannerMode" class="mb-3 p-3 border">
-                        <label class="form-label" for="devScannerModeSelect">Scanner mode</label>
-                        <select class="form-select" id="devScannerModeSelect" name="setting_scanner_mode">
-                            <option value="aws" {% if settings.get('scanner_mode') and settings['scanner_mode'].value == 'aws' %}selected{% endif %}>AWS</option>
-                            <option value="demo" {% if settings.get('scanner_mode') and settings['scanner_mode'].value == 'demo' %}selected{% endif %}>Demo</option>
-                        </select>
-                        <div class="form-text">Demo mode runs without AWS credentials — sample findings for walkthroughs. Mode switching is manual; AWS mode without credentials still fails hard.</div>
-                    </div>
-
                     <button type="submit" class="btn btn-primary" id="appSaveBtn" hidden>Save Application Settings</button>
                 </form>
 
@@ -196,7 +187,6 @@
     var appSave = document.getElementById('appSaveBtn');
     if (appForm && appSave) {
         var appFieldNames = [
-            'setting_scanner_mode',
             'setting_report_format',
             'setting_theme',
             'setting_assessments_per_page',

@@ -23,28 +23,7 @@ Every later session starts at login. No default credentials ship with the app.
 
 ---
 
-## 1. Demo showcase scan (no AWS needed)
-
-**Goal:** full UI walkthrough for professors / offline demo.
-
-| Step | Action | Result |
-|------|--------|--------|
-| 1 | Login | Dashboard |
-| 2 | Dashboard → **Start Assessment** (or `/assessment/new`) | New assessment form |
-| 3 | Enter name/description → Run | Orchestrator generates demo findings |
-| 5 | Redirect to assessment detail | Status `completed`, score, counts, `engines=demo`, raw vs deduped |
-| 6 | Findings → filter/sort → open a finding | Detail with recommendation, resource, control, engines |
-| 7 | Reports → Generate HTML / JSON (PDF if WeasyPrint) | File under `instance/reports/` |
-| 8 | Download report | Content-Disposition file |
-| 9 | Run a second demo assessment | History has two rows |
-| 10 | Comparison → pick both | Score + severity deltas side-by-side |
-| 11 | Remediation → set statuses | Progress board updates |
-
-**Mode rule:** Demo is never auto-selected because scanners failed.
-
----
-
-## 2. Real AWS scan
+## 1. Real AWS scan
 
 **Preconditions:** AWS credentials configured; Prowler and/or ScoutSuite installed (optional but recommended).
 
@@ -53,7 +32,7 @@ Every later session starts at login. No default credentials ship with the app.
 | 1 | Start assessment → Run | Credential probe |
 | 3a | Creds present + engines installed | Prowler runs → ScoutSuite runs → merged |
 | 3b | Creds present, engines missing | boto3 fallback checks run (`engines=boto3`) |
-| 3c | **No credentials** | `CredentialsError` — clear message, assessment `failed`, **no demo** |
+| 3c | **No credentials** | `CredentialsError` — clear message, assessment `failed` |
 | 3d | Engine crash/timeout | Recorded in `errors` / `scan_error`; partial results kept if any engine succeeded |
 | 4 | Review findings with real ARNs/control IDs | Dedupe provenance e.g. `prowler,scoutsuite` visible |
 | 5 | Generate report | Redundancy note shows `raw_count − deduped_count` |
@@ -62,7 +41,7 @@ Every later session starts at login. No default credentials ship with the app.
 
 ---
 
-## 3. Findings triage loop
+## 2. Findings triage loop
 
 ```text
 Findings list
@@ -80,7 +59,7 @@ Remediation board + next assessment comparison reflect change
 
 ---
 
-## 4. Report generation
+## 3. Report generation
 
 ```text
 Reports screen ──► choose assessment + format
@@ -97,7 +76,7 @@ Report structure: Executive Summary → Overview → Findings table → Severity
 
 ---
 
-## 5. Optional AI assist
+## 4. Optional AI assist
 
 | Step | Action |
 |------|--------|
@@ -107,11 +86,11 @@ Report structure: Executive Summary → Overview → Findings table → Severity
 | 4 | Rate limit hit → 429 shows retry-after |
 | 5 | Disable AI → endpoints return 403 immediately |
 
-Default is **off** — demo works with AI never configured.
+Default is **off** — scans and reports work with AI never configured.
 
 ---
 
-## 6. Settings maintenance
+## 5. Settings maintenance
 
 | Task | Path |
 |------|------|
@@ -122,13 +101,13 @@ Default is **off** — demo works with AI never configured.
 
 ---
 
-## 7. Error paths (expected UX)
+## 6. Error paths (expected UX)
 
 | Condition | Behavior |
 |-----------|----------|
 | Not logged in | Redirect login; return to intended page after |
 | Wrong password | Inline error + fail delay |
-| AWS mode, no creds | Assessment failed; message tells operator to `aws configure` |
+| No AWS creds | Assessment failed; message tells operator to `aws configure` |
 | No engines + no boto3 results | `EngineUnavailableError` surfaced on assessment |
 | AI off | 403 JSON on AI routes |
 | AI over limit | 429 + Retry-After |
@@ -137,7 +116,7 @@ Default is **off** — demo works with AI never configured.
 
 ---
 
-## 8. Contributor workflow (project process)
+## 7. Contributor workflow (project process)
 
 ```text
 User (code)                 Friend (docs)

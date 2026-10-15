@@ -31,20 +31,3 @@ def safe_filename(filename):
     filename = re.sub(r'[^\w\s\-.]', '', filename)
     filename = re.sub(r'\s+', '_', filename)
     return filename[:200]
-
-
-def _demo_mode():
-    from app.modules.settings.services import get_setting
-    return get_setting('scanner_mode', 'aws') == 'demo'
-
-
-def mode_filter(model):
-    """SQL condition: only assessments of the active scanner mode (aws vs demo)."""
-    if _demo_mode():
-        return model.engines_used == 'demo'
-    # ponytail: failed rows with engines_used='' count as aws; add a dedicated column if that matters
-    return model.engines_used != 'demo'
-
-
-def mode_visible(assessment):
-    return (assessment.engines_used == 'demo') == _demo_mode()

@@ -48,7 +48,7 @@ No multi-user FK graph: one `User` row is the local account. Assessments are not
 | total_findings | INTEGER | default 0 | deduped count |
 | critical_count … informational_count | INTEGER | default 0 | five severity buckets |
 | status | VARCHAR(20) | NOT NULL, default `pending` | pending → running → completed \| failed |
-| engines_used | VARCHAR(200) | default `''` | e.g. `prowler,scoutsuite` or `demo` / `boto3` |
+| engines_used | VARCHAR(200) | default `''` | e.g. `prowler,scoutsuite` or `boto3` |
 | raw_count | INTEGER | default 0 | pre-dedupe |
 | deduped_count | INTEGER | default 0 | post-dedupe |
 | scan_error | TEXT | nullable | failure details / engine errors |
@@ -114,7 +114,6 @@ No multi-user FK graph: one `User` row is the local account. Assessments are not
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| scanner_mode | `aws` | `aws` \| `demo` (manual only) |
 | theme | `light` | UI theme |
 | ai_enabled | `false` | master AI switch |
 | ai_base_url | `''` | HTTPS endpoint (loopback http allowed) |

@@ -16,7 +16,7 @@ The AWS Cloud Security Audit Tool is a Python/Flask web application that automat
 |------|---------|
 | Assessment (scan) | One execution of the scanner pipeline against an account/region set |
 | Finding | A single security issue with severity, category, resource, and recommendation |
-| Engine | Prowler, ScoutSuite, boto3 checks, or Demo generator |
+| Engine | Prowler, ScoutSuite, or boto3 checks |
 | Dedupe | Merge of equivalent findings across engines (same control/resource) |
 | Security score | 0–100 derived from severity-weighted open findings |
 
@@ -62,7 +62,7 @@ Cloud environments accumulate misconfigurations (over-permissive IAM, public buc
 ### 4.3 Constraints
 
 - Single local account; no multi-tenancy in v1
-- Demo mode is **manual only**; AWS mode without credentials must error (never silent demo)
+- Scans require real AWS credentials; missing credentials must error clearly (no simulated fallback)
 - AI is **opt-in**, rate-limited, HTTPS-only endpoints (loopback exception for Ollama)
 - Read-only AWS credentials recommended
 
@@ -81,11 +81,10 @@ Cloud environments accumulate misconfigurations (over-permissive IAM, public buc
 |----|-------------|-------|
 | FR-01 | First-run account setup | `/auth/setup` — username + password (min 8), hashed |
 | FR-02 | Session login | Required for all app routes; logout ends session |
-| FR-03 | Start assessment | Name + optional description; mode from Settings |
+| FR-03 | Start assessment | Name + optional description |
 | FR-04 | Dual-engine scan | Prowler + ScoutSuite both attempted when available |
 | FR-05 | boto3 fallback | Used only if neither external engine runs |
-| FR-06 | Demo mode | Manual only; never auto-selected |
-| FR-07 | Hard fail without creds | AWS mode + no creds → clear error, no demo fallback |
+| FR-07 | Hard fail without creds | No creds → clear error, no simulated fallback |
 | FR-08 | Normalize findings | Map engine output → common schema (severity, category, title, description, recommendation, resource, control_id, engines) |
 | FR-09 | Deduplicate | Same control+resource across engines → one finding; provenance retained; raw vs deduped counts stored |
 | FR-10 | Severity classification | critical / high / medium / low / informational |
@@ -134,9 +133,9 @@ Cloud environments accumulate misconfigurations (over-permissive IAM, public buc
 
 | Method | Coverage |
 |--------|----------|
-| Unit tests | Analyzer (dedupe, score, prioritize), scanner parsing (fixtures), demo, rate limiter |
+| Unit tests | Analyzer (dedupe, score, prioritize), scanner parsing (fixtures), rate limiter |
 | Integration tests | Auth cycle, full route smoke, report generation, settings save, AI 403 path |
-| E2E script | `smoke_test.py` — setup → login → demo scan → reports → all modules |
+| E2E script | `smoke_test.py` — setup → login → canned scan (mocked engine) → reports → all modules |
 | Manual gate | P5 user go/no-go on running app |
 
 ---

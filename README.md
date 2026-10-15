@@ -14,7 +14,7 @@ A self-hosted web application that audits AWS accounts with **Prowler + ScoutSui
 
 ## Features
 
-- **Real AWS primary** — default scanner mode is **AWS** (Prowler + ScoutSuite when installed, boto3 fallback). Missing credentials fail hard with a clear error — no silent demo.
+- **Real AWS only** — Prowler + ScoutSuite when installed, boto3 fallback. Missing credentials fail hard with a clear error.
 - **AWS connection panel** — Settings shows credential status, region, and Test connection (STS `GetCallerIdentity` only); keys stay in `~/.aws` (never entered into the app).
 - **Findings workspace** — search, filter, sort; severity badges; resource ARN and control ID; remediation status tracking.
 - **Assessment history & comparison** — score trend, severity deltas, side-by-side view.
@@ -114,23 +114,9 @@ Settings → **AWS connection** shows credential status, region, and a **Test co
 Without the tool installed, boto3 fallback checks still run.  
 Missing credentials → hard error (by design).
 
-### Scanner modes
-
-Results are scoped to the active scanner mode: **AWS mode** shows only real AWS assessments, **demo mode** shows only demo results — across Dashboard, History, Findings, Remediation, Comparison, and Reports.
-
-Switch modes under **Settings → Application Settings → Scanner mode** (Demo runs without AWS credentials). Mode changes apply to the next assessment; existing results stay scoped to their mode.
-
-### First scan in 5 minutes (no AWS)
-
-1. Start the app (Quick start above) and open `http://127.0.0.1:5000/auth/setup` — create your account, then log in.
-2. Go to **Settings → Application Settings → Scanner mode** and pick **Demo**.
-3. **Assessments → New** → name it → Run. Simulated findings appear in seconds.
-4. Explore Dashboard, Findings, Remediation, and Reports; generate a sample report.
-5. Switch Scanner mode back to **AWS** when your credentials are ready (see *Real AWS* above).
-
 ### Application Settings
 
-Report Format, Theme, Assessments Per Page, Findings Per Page — the **Save Application Settings** button appears only when one of them or Scanner mode changes.
+Report Format, Theme, Assessments Per Page, Findings Per Page — the **Save Application Settings** button appears only when one of them changes.
 
 ### Optional: AI
 
@@ -160,7 +146,7 @@ config.py              Flask config (instance-persisted SECRET_KEY)
 requirements.txt       pinned runtime deps
 src/
   app/                 Flask app factory, blueprints, models, templates, static
-  scanner/             orchestrator · prowler · scoutsuite · boto3 · demo
+  scanner/             orchestrator · prowler · scoutsuite · boto3
   analyzer/            normalize · dedupe · score · prioritize
   ai/                  OpenAI-compatible client + rate limiter
   reports/             HTML/PDF/JSON renderer (dossier style)

@@ -7,13 +7,12 @@ from app.models.assessment import Assessment
 
 @reports_bp.route('/')
 def index():
-    from app.utils.helpers import mode_filter
     assessment_id = request.args.get('assessment_id', type=int)
     reports = get_reports(assessment_id=assessment_id)
     if assessment_id:
         assessments_list = [get_assessment(assessment_id)]
     else:
-        assessments_list = Assessment.query.filter(mode_filter(Assessment)).order_by(Assessment.created_at.desc()).all()
+        assessments_list = Assessment.query.order_by(Assessment.created_at.desc()).all()
     return render_template(
         'reports/index.html',
         reports=reports,

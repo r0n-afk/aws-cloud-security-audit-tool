@@ -63,17 +63,34 @@ r = c.get('/')
 print('dashboard', r.status_code)
 assert r.status_code == 200
 
-with app.app_context():
-    from app.modules.settings.services import update_setting
+from unittest import mock
 
-    update_setting('scanner_mode', 'demo')
+
+def _fake_run_scan(timeout=1800):
+    raw = [
+        {'engine': 'prowler', 'control_id': 'iam-root-mfa', 'severity': 'critical',
+         'category': 'Identity and Access Management', 'title': 'Root account MFA disabled',
+         'description': 'Root account has no MFA.', 'recommendation': 'Enable MFA.',
+         'resource': 'arn:aws:iam::123456789012:root'},
+        {'engine': 'scoutsuite', 'control_id': 's3-bucket-logging', 'severity': 'medium',
+         'category': 'Storage', 'title': 'S3 bucket logging disabled',
+         'description': 'Logging not enabled.', 'recommendation': 'Enable logging.',
+         'resource': 'arn:aws:s3:::bucket'},
+    ]
+    return {
+        'findings': raw, 'engines': ['prowler', 'scoutsuite'], 'raw_count': len(raw),
+        'mode': 'aws', 'aws_account_id': '123456789012',
+        'aws_arn': 'arn:aws:iam::123456789012:root', 'errors': [],
+    }
+
 
 r = c.get('/assessment/new')
 token = csrf(r.data)
-r = c.post(
-    '/assessment/create',
-    data={'name': 'Smoke Test', 'description': 'e2e', 'csrf_token': token},
-)
+with mock.patch('scanner.orchestrator.run_scan', _fake_run_scan):
+    r = c.post(
+        '/assessment/create',
+        data={'name': 'Smoke Test', 'description': 'e2e', 'csrf_token': token},
+    )
 print('create scan', r.status_code, r.headers.get('Location'))
 
 with app.app_context():
@@ -120,16 +137,13 @@ assert r.status_code == 403, r.status_code
 r = c.get('/auth/logout')  # GET logout not allowed? check
 print('logout GET', r.status_code)
 
-with app.app_context():
-    update_setting('scanner_mode', 'aws')
-
 from scanner.aws_checks import has_credentials
 from scanner.orchestrator import CredentialsError, run_scan
 
 print('has_credentials probe:', has_credentials())
 if not has_credentials():
     try:
-        run_scan(mode='aws')
+        run_scan()
         raise SystemExit('ERROR: expected CredentialsError')
     except CredentialsError as e:
         print('CredentialsError OK:', str(e)[:70])

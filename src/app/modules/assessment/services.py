@@ -23,17 +23,11 @@ def create_assessment(name, description=''):
 
 
 def get_assessment(assessment_id):
-    from app.utils.helpers import mode_visible
-    assessment = Assessment.query.get_or_404(assessment_id)
-    if not mode_visible(assessment):
-        from flask import abort
-        abort(404)
-    return assessment
+    return Assessment.query.get_or_404(assessment_id)
 
 
 def run_assessment(assessment_id):
     from flask import current_app
-    from app.modules.settings.services import get_setting
     from scanner.orchestrator import CredentialsError, EngineUnavailableError, run_scan
     from analyzer import analyze
 
@@ -44,11 +38,10 @@ def run_assessment(assessment_id):
     assessment.status = 'running'
     db.session.commit()
 
-    mode = get_setting('scanner_mode', 'aws')
     timeout = current_app.config.get('SCAN_TIMEOUT_SECONDS', 1800)
 
     try:
-        scan_result = run_scan(mode=mode, timeout=timeout)
+        scan_result = run_scan(timeout=timeout)
         analysis = analyze(scan_result['findings'])
 
         for item in analysis['findings']:

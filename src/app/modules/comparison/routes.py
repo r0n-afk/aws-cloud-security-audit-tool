@@ -6,8 +6,7 @@ from app.models.assessment import Assessment
 
 @comparison_bp.route('/')
 def index():
-    from app.utils.helpers import mode_filter
-    assessments = Assessment.query.filter_by(status='completed').filter(mode_filter(Assessment)).order_by(Assessment.created_at.desc()).all()
+    assessments = Assessment.query.filter_by(status='completed').order_by(Assessment.created_at.desc()).all()
     id1 = request.args.get('id1', type=int)
     id2 = request.args.get('id2', type=int)
     comparison = None

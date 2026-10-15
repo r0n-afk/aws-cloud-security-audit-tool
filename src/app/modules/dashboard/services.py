@@ -1,16 +1,13 @@
 from app.models.assessment import Assessment
 from app.models.finding import Finding
-from app.utils.helpers import mode_filter
 
 
 def _assessments():
-    return Assessment.query.filter(mode_filter(Assessment))
+    return Assessment.query
 
 
 def _findings():
-    return Finding.query.join(Assessment, Finding.assessment_id == Assessment.id).filter(
-        mode_filter(Assessment)
-    )
+    return Finding.query.join(Assessment, Finding.assessment_id == Assessment.id)
 
 
 def get_dashboard_stats():
