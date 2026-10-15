@@ -1,0 +1,23 @@
+AWS Cloud Security Audit Tool
+Copyright 2026 Rohan Kolte and contributors
+
+This product includes software developed for AWS cloud security auditing.
+
+Third-party components (their licenses apply to them, not to this repository):
+
+  - ScoutSuite
+    License: GPL-2.0
+    https://github.com/nccgroup/ScoutSuite
+    Invoked only as an external CLI process (out-of-process); not imported,
+    not vendored. The GPL does not extend to this repository.
+
+  - Prowler
+    License: Apache-2.0
+    https://github.com/prowler-cloud/prowler
+    Invoked only as an external CLI process (out-of-process); not imported,
+    not vendored.
+
+  - Boto3 (AWS SDK for Python)
+    License: Apache-2.0
+    https://github.com/boto/boto3
+    Used as a normal pip dependency.
