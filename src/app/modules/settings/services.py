@@ -1,6 +1,5 @@
-from app.models.setting import Setting
 from app.extensions import db
-
+from app.models.setting import Setting
 
 DEFAULT_SETTINGS = {
     'report_format': {'value': 'pdf', 'description': 'Default report format (pdf, html, json)'},

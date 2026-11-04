@@ -1,13 +1,15 @@
-from flask import Flask
 import os
 import sys
+
+from flask import Flask
 
 _src = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if _src not in sys.path:
     sys.path.insert(0, _src)
 
 from config import config
-from app.extensions import db, csrf
+
+from app.extensions import csrf, db
 
 
 def ensure_identity_columns(engine):
@@ -44,18 +46,17 @@ def create_app(config_name='default'):
     csrf.init_app(app)
 
     with app.app_context():
-        from app import models as _models  # noqa: F401  register tables
-
-        from app.modules.auth import auth_bp
-        from app.modules.dashboard import dashboard_bp
+        from app import models as _models
+        from app.modules.ai import ai_bp
         from app.modules.assessment import assessment_bp
-        from app.modules.findings import findings_bp
-        from app.modules.reports import reports_bp
+        from app.modules.auth import auth_bp
         from app.modules.comparison import comparison_bp
+        from app.modules.dashboard import dashboard_bp
+        from app.modules.findings import findings_bp
         from app.modules.history import history_bp
         from app.modules.remediation import remediation_bp
+        from app.modules.reports import reports_bp
         from app.modules.settings import settings_bp
-        from app.modules.ai import ai_bp
 
         app.register_blueprint(auth_bp)
         app.register_blueprint(dashboard_bp, url_prefix='/')
@@ -68,9 +69,10 @@ def create_app(config_name='default'):
         app.register_blueprint(settings_bp, url_prefix='/settings')
         app.register_blueprint(ai_bp, url_prefix='/ai')
 
-        from app.utils.helpers import format_date, format_score, format_percentage
-        from app.utils.formatters import severity_badge_color, status_badge_color, assessment_status_badge, score_color
         from flask_wtf.csrf import generate_csrf
+
+        from app.utils.formatters import assessment_status_badge, score_color, severity_badge_color, status_badge_color
+        from app.utils.helpers import format_date, format_percentage, format_score
         app.jinja_env.globals.update(
             format_date=format_date,
             format_score=format_score,
@@ -84,6 +86,19 @@ def create_app(config_name='default'):
 
         register_error_handlers(app)
 
+        @app.after_request
+        def _security_headers(response):
+            response.headers.setdefault('X-Frame-Options', 'DENY')
+            response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+            response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+            response.headers.setdefault(
+                'Content-Security-Policy',
+                "default-src 'self'; img-src 'self' data:; "
+                "style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; "
+                "font-src 'self' data:; frame-ancestors 'none';",
+            )
+            return response
+
         @app.route('/favicon.ico')
         def favicon():
             from flask import Response
@@ -91,9 +106,10 @@ def create_app(config_name='default'):
 
         @app.context_processor
         def inject_globals():
-            from app.modules.settings.services import get_setting
-            from app.models.user import User
             from flask import session
+
+            from app.models.user import User
+            from app.modules.settings.services import get_setting
             try:
                 ai_on = str(get_setting('ai_enabled', 'false')).lower() == 'true'
             except Exception:
@@ -106,7 +122,8 @@ def create_app(config_name='default'):
 
         @app.before_request
         def _enforce_local_auth():
-            from flask import request, session, redirect, url_for
+            from flask import redirect, request, session, url_for
+
             from app.models.user import User
             endpoint = request.endpoint or ''
             if endpoint == 'static' or endpoint.startswith('auth.'):

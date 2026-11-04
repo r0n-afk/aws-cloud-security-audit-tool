@@ -66,12 +66,13 @@ def test_ai_endpoint_requires_auth_and_enabled(app, client):
 
 
 def test_ai_disabled_returns_403(auth_client, app):
-    from app.models.finding import Finding
     from app.extensions import db
+    from app.models.finding import Finding
 
     with app.app_context():
-        from app.models.assessment import Assessment
         from datetime import datetime
+
+        from app.models.assessment import Assessment
 
         a = Assessment(name='t', assessment_date=datetime.utcnow(), status='completed')
         db.session.add(a)

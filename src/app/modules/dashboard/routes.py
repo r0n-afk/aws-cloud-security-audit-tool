@@ -1,6 +1,7 @@
-from flask import render_template, jsonify
+from flask import jsonify, render_template
+
 from app.modules.dashboard import dashboard_bp
-from app.modules.dashboard.services import get_dashboard_stats, get_chart_data, get_recent_activity
+from app.modules.dashboard.services import get_chart_data, get_dashboard_stats, get_recent_activity
 
 
 @dashboard_bp.route('/')

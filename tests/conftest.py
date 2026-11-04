@@ -13,9 +13,10 @@ if SRC not in sys.path:
 
 @pytest.fixture()
 def app():
+    from config import config as config_map
+
     from app import create_app
     from app.extensions import db as _db
-    from config import config as config_map
 
     tmp = tempfile.mkdtemp(prefix='csat_test_')
     cfg = config_map['development']

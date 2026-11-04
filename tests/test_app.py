@@ -105,8 +105,8 @@ def test_report_html_and_json(auth_client, app, tmp_path):
 def test_download_path_traversal_guard(auth_client, app):
     aid = _scan(auth_client, app, 'Traversal')
     with app.app_context():
-        from app.models.report import Report
         from app.extensions import db
+        from app.models.report import Report
         from app.modules.reports.services import download_report
 
         r = Report(assessment_id=aid, report_type='html', report_path='C:\\Windows\\System32\\drivers\\etc\\hosts')
@@ -201,7 +201,7 @@ def test_settings_save_btn_shows_when_ai_on(auth_client, app):
 
 
 def test_settings_gateway_fields_required_when_enabled(auth_client, app):
-    from app.modules.settings.services import update_setting, get_setting
+    from app.modules.settings.services import get_setting, update_setting
 
     with app.app_context():
         update_setting('ai_enabled', 'true')
@@ -237,7 +237,7 @@ def test_settings_gateway_fields_required_when_enabled(auth_client, app):
 
 
 def test_settings_gateway_requires_base_url_when_enabling(auth_client, app):
-    from app.modules.settings.services import update_setting, get_setting
+    from app.modules.settings.services import get_setting, update_setting
 
     with app.app_context():
         update_setting('ai_enabled', 'false')

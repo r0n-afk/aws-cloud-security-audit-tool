@@ -1,6 +1,7 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import flash, jsonify, redirect, render_template, request, url_for
+
 from app.modules.settings import settings_bp
-from app.modules.settings.services import get_all_settings, update_setting, get_setting, SENSITIVE_KEYS
+from app.modules.settings.services import SENSITIVE_KEYS, get_all_settings, get_setting, update_setting
 
 
 @settings_bp.route('/')

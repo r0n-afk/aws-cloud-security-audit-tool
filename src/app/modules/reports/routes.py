@@ -1,8 +1,9 @@
-from flask import render_template, request, redirect, url_for, flash, send_file
-from app.modules.reports import reports_bp
-from app.modules.reports.services import generate_report, get_report, get_reports, download_report
-from app.modules.assessment.services import get_assessment
+from flask import flash, redirect, render_template, request, send_file, url_for
+
 from app.models.assessment import Assessment
+from app.modules.assessment.services import get_assessment
+from app.modules.reports import reports_bp
+from app.modules.reports.services import download_report, generate_report, get_report, get_reports
 
 
 @reports_bp.route('/')

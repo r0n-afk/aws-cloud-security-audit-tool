@@ -1,6 +1,6 @@
 from app.extensions import db
-from app.models.finding import Finding
 from app.models.assessment import Assessment
+from app.models.finding import Finding
 from app.utils.validators import validate_status
 
 

@@ -1,7 +1,7 @@
 """Scan orchestrator: creds probe -> Prowler + ScoutSuite (both) -> boto3 fallback."""
 import subprocess
 
-from scanner import prowler_engine, scoutsuite_engine, aws_checks
+from scanner import aws_checks, prowler_engine, scoutsuite_engine
 
 
 class EngineUnavailableError(Exception):
@@ -12,14 +12,22 @@ class CredentialsError(Exception):
     pass
 
 
-def run_scan(timeout=1800):
+def run_scan(timeout=1800, regions=None):
     if not aws_checks.has_credentials():
         raise CredentialsError(
             'No AWS credentials found. Run `aws configure` or set '
             'AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY, then retry.'
         )
 
-    account, arn = aws_checks.identity()
+    if not regions:
+        try:
+            regions = aws_checks.list_regions()
+        except Exception:
+            regions = [None]
+    if not regions:
+        regions = [None]
+
+    account, arn = aws_checks.identity(regions[0] if regions else None)
 
     engines = []
     raw = []
@@ -42,14 +50,19 @@ def run_scan(timeout=1800):
             errors.append(f'scoutsuite: {exc}')
 
     if not engines:
-        try:
-            raw.extend(aws_checks.run_boto3_checks())
+        for reg in regions:
+            try:
+                raw.extend(aws_checks.run_boto3_checks(region=reg))
+            except Exception as exc:
+                errors.append(f'boto3[{reg}]: {exc}')
+        if raw:
             engines.append('boto3')
-        except Exception as exc:
-            raise EngineUnavailableError(
-                'No scanner engine could run. Install Prowler and/or ScoutSuite, '
-                f'or verify AWS credentials/boto3 access. Details: {exc}'
-            ) from exc
+
+    if not engines:
+        raise EngineUnavailableError(
+            'No scanner engine could run. Install Prowler and/or ScoutSuite, '
+            f'or verify AWS credentials/boto3 access. Details: {"; ".join(errors)}'
+        )
 
     if not raw:
         raise EngineUnavailableError(
@@ -63,5 +76,6 @@ def run_scan(timeout=1800):
         'mode': 'aws',
         'aws_account_id': account,
         'aws_arn': arn,
+        'regions': [str(r) for r in regions],
         'errors': errors,
     }

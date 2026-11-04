@@ -1,7 +1,8 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import flash, jsonify, redirect, render_template, request, url_for
+
+from app.models.assessment import Assessment
 from app.modules.comparison import comparison_bp
 from app.modules.comparison.services import compare_assessments, get_comparison_chart_data
-from app.models.assessment import Assessment
 
 
 @comparison_bp.route('/')

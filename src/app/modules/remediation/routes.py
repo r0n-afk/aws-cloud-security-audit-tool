@@ -1,6 +1,11 @@
-from flask import render_template, request, jsonify
+from flask import jsonify, render_template, request
+
 from app.modules.remediation import remediation_bp
-from app.modules.remediation.services import get_remediation_dashboard, update_remediation_status, get_remediation_progress
+from app.modules.remediation.services import (
+    get_remediation_dashboard,
+    get_remediation_progress,
+    update_remediation_status,
+)
 
 
 @remediation_bp.route('/')

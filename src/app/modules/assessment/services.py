@@ -2,8 +2,8 @@ from datetime import datetime
 
 from app.extensions import db
 from app.models.assessment import Assessment
-from app.models.finding import Finding
 from app.models.audit import log_event
+from app.models.finding import Finding
 from app.utils.validators import validate_assessment_name
 
 
@@ -26,10 +26,11 @@ def get_assessment(assessment_id):
     return Assessment.query.get_or_404(assessment_id)
 
 
-def run_assessment(assessment_id):
+def run_assessment(assessment_id, regions=None):
     from flask import current_app
-    from scanner.orchestrator import CredentialsError, EngineUnavailableError, run_scan
+
     from analyzer import analyze
+    from scanner.orchestrator import CredentialsError, EngineUnavailableError, run_scan
 
     assessment = Assessment.query.get(assessment_id)
     if not assessment:
@@ -41,7 +42,10 @@ def run_assessment(assessment_id):
     timeout = current_app.config.get('SCAN_TIMEOUT_SECONDS', 1800)
 
     try:
-        scan_result = run_scan(timeout=timeout)
+        if regions:
+            scan_result = run_scan(timeout=timeout, regions=regions)
+        else:
+            scan_result = run_scan(timeout=timeout)
         analysis = analyze(scan_result['findings'])
 
         for item in analysis['findings']:

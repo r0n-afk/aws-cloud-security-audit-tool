@@ -1,8 +1,8 @@
 from flask import jsonify, request
 
+from app.models.assessment import Assessment
 from app.modules.ai import ai_bp
 from app.modules.findings.services import get_finding, get_findings
-from app.models.assessment import Assessment
 
 
 def _ai_unavailable(message, status=400):

@@ -26,12 +26,18 @@ def _client(session, service, region=None):
         return None
 
 
-def run_boto3_checks(region=None):
+def _session(region=None):
     import boto3
+    if region:
+        return boto3.Session(region_name=region)
+    return boto3.Session()
+
+
+def run_boto3_checks(region=None):
     from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 
     try:
-        session = boto3.Session()
+        session = _session(region)
         creds = session.get_credentials()
         if creds is None:
             raise NoCredentialsError()
@@ -45,6 +51,7 @@ def run_boto3_checks(region=None):
 
     findings = []
     engine = 'boto3'
+    r = region or session.region_name
 
     iam = _client(session, 'iam')
     if iam:
@@ -111,6 +118,18 @@ def run_boto3_checks(region=None):
                                 f'Access key {key_id} is {age_days} days old.',
                                 'Rotate access keys at least every 90 days.',
                                 f'aws::iam-user/{name}'))
+                    if key.get('Status') == 'Active':
+                        try:
+                            lu = iam.get_access_key_last_used(AccessKeyId=key.get('AccessKeyId'))['AccessKeyLastUsed']
+                            if lu.get('LastUsedDate') is None:
+                                findings.append(_finding(
+                                    engine, 'iam-unused-access-key', 'medium', 'Identity & Access Management',
+                                    f'Unused Access Key on {name}',
+                                    f'Access key {key.get("AccessKeyId", "?")} has never been used.',
+                                    'Delete unused access keys.',
+                                    f'aws::iam-user/{name}'))
+                        except ClientError:
+                            pass
         except ClientError:
             pass
 
@@ -136,10 +155,6 @@ def run_boto3_checks(region=None):
                 except ClientError:
                     pass
                 try:
-                    s3.get_bucket_policy_status(Bucket=bname)
-                except ClientError:
-                    pass
-                try:
                     s3.get_bucket_encryption(Bucket=bname)
                 except ClientError:
                     findings.append(_finding(
@@ -149,19 +164,43 @@ def run_boto3_checks(region=None):
                         'Enable default SSE-S3 or SSE-KMS encryption on the bucket.',
                         f'aws::s3/{bname}'))
                 try:
-                    s3.get_bucket_logging(Bucket=bname)
+                    ver = s3.get_bucket_versioning(Bucket=bname)
+                    if ver.get('Status') != 'Enabled':
+                        findings.append(_finding(
+                            engine, 's3-versioning-disabled', 'medium', 'Data Protection',
+                            f'S3 Versioning Disabled: {bname}',
+                            f'Bucket {bname} does not have versioning enabled.',
+                            'Enable versioning on the bucket.',
+                            f'aws::s3/{bname}'))
                 except ClientError:
                     pass
+                try:
+                    pab = s3.get_public_access_block(Bucket=bname)
+                    cfg = pab.get('PublicAccessBlockConfiguration', {})
+                    if not all(cfg.get(k) for k in ('BlockPublicAcls', 'IgnorePublicAcls', 'BlockPublicPolicy', 'RestrictPublicBuckets')):
+                        findings.append(_finding(
+                            engine, 's3-public-access-block', 'high', 'Data Protection',
+                            f'S3 Public Access Block Incomplete: {bname}',
+                            f'Bucket {bname} does not fully block public access.',
+                            'Enable all four S3 Block Public Access settings.',
+                            f'aws::s3/{bname}'))
+                except ClientError:
+                    findings.append(_finding(
+                        engine, 's3-no-public-access-block', 'medium', 'Data Protection',
+                        f'S3 Public Access Block Not Configured: {bname}',
+                        f'Bucket {bname} has no public access block configuration.',
+                        'Configure S3 Block Public Access on the bucket.',
+                        f'aws::s3/{bname}'))
         except ClientError:
             pass
 
-    ec2 = _client(session, 'ec2')
+    ec2 = _client(session, 'ec2', r)
     if ec2:
         try:
             sgs = ec2.describe_security_groups().get('SecurityGroups', [])
             for sg in sgs:
                 for perm in sg.get('IpPermissions', []):
-                    ranges = [r.get('CidrIp') for r in perm.get('IpRanges', [])]
+                    ranges = [x.get('CidrIp') for x in perm.get('IpRanges', [])]
                     if '0.0.0.0/0' in ranges:
                         port = perm.get('FromPort')
                         if port in (22, 3389) or (port is None and perm.get('IpProtocol') == '-1'):
@@ -190,8 +229,49 @@ def run_boto3_checks(region=None):
                         f'aws::ebs/{vol_id}'))
         except ClientError:
             pass
+        try:
+            for res in ec2.describe_instances().get('Reservations', []):
+                for inst in res.get('Instances', []):
+                    md = inst.get('MetadataOptions', {})
+                    if md.get('HttpTokens') != 'required':
+                        iid = inst.get('InstanceId', '?')
+                        findings.append(_finding(
+                            engine, 'ec2-imdsv2-not-required', 'medium', 'Compute Security',
+                            f'IMDSv2 Not Required: {iid}',
+                            f'EC2 instance {iid} does not require IMDSv2.',
+                            'Set HttpTokens to required for IMDSv2.',
+                            f'aws::ec2/{iid}'))
+        except ClientError:
+            pass
+        try:
+            for snap in ec2.describe_snapshots(OwnerIds=['self']).get('Snapshots', []):
+                if not snap.get('Encrypted', False):
+                    sid = snap.get('SnapshotId', '?')
+                    findings.append(_finding(
+                        engine, 'ebs-snapshot-unencrypted', 'medium', 'Data Protection',
+                        f'Unencrypted EBS Snapshot: {sid}',
+                        f'EBS snapshot {sid} is not encrypted.',
+                        'Encrypt EBS snapshots.',
+                        f'aws::ebs-snapshot/{sid}'))
+        except ClientError:
+            pass
+        try:
+            vpcs = ec2.describe_vpcs().get('Vpcs', [])
+            flow_logs = ec2.describe_flow_logs().get('FlowLogs', [])
+            vpc_ids_with_logs = {fl.get('ResourceId') for fl in flow_logs}
+            for vpc in vpcs:
+                vid = vpc.get('VpcId')
+                if vid not in vpc_ids_with_logs:
+                    findings.append(_finding(
+                        engine, 'vpc-flow-logs-disabled', 'medium', 'Logging & Monitoring',
+                        f'VPC Flow Logs Disabled: {vid}',
+                        f'VPC {vid} has no flow logs enabled.',
+                        'Enable VPC flow logs for network monitoring.',
+                        f'aws::vpc/{vid}'))
+        except ClientError:
+            pass
 
-    ct = _client(session, 'cloudtrail')
+    ct = _client(session, 'cloudtrail', r)
     if ct:
         try:
             trails = ct.describe_trails().get('trailList', [])
@@ -211,10 +291,18 @@ def run_boto3_checks(region=None):
                         'CloudTrail exists but is not enabled for all regions.',
                         'Convert the trail to a multi-region trail.',
                         'aws::cloudtrail'))
+                for t in trails:
+                    if not t.get('LogFileValidationEnabled'):
+                        findings.append(_finding(
+                            engine, 'cloudtrail-log-validation', 'medium', 'Logging & Monitoring',
+                            'CloudTrail Log Validation Disabled',
+                            f'Trail {t.get("Name")} does not have log file validation.',
+                            'Enable log file validation on the trail.',
+                            f'aws::cloudtrail/{t.get("Name")}'))
         except ClientError:
             pass
 
-    gd = _client(session, 'guardduty')
+    gd = _client(session, 'guardduty', r)
     if gd:
         try:
             detectors = gd.list_detectors().get('DetectorIds', [])
@@ -228,6 +316,101 @@ def run_boto3_checks(region=None):
         except ClientError:
             pass
 
+    rds = _client(session, 'rds', r)
+    if rds:
+        try:
+            for dbi in rds.describe_db_instances().get('DBInstances', []):
+                did = dbi.get('DBInstanceIdentifier', '?')
+                if not dbi.get('StorageEncrypted', False):
+                    findings.append(_finding(
+                        engine, 'rds-unencrypted', 'high', 'Data Protection',
+                        f'Unencrypted RDS Instance: {did}',
+                        f'RDS instance {did} is not encrypted at rest.',
+                        'Enable storage encryption for RDS.',
+                        f'aws::rds/{did}'))
+                if dbi.get('PubliclyAccessible'):
+                    findings.append(_finding(
+                        engine, 'rds-public', 'high', 'Network Security',
+                        f'Publicly Accessible RDS: {did}',
+                        f'RDS instance {did} is publicly accessible.',
+                        'Disable public accessibility for RDS.',
+                        f'aws::rds/{did}'))
+        except ClientError:
+            pass
+
+    kms = _client(session, 'kms', r)
+    if kms:
+        try:
+            for k in kms.list_keys().get('Keys', []):
+                kid = k.get('KeyId', '?')
+                try:
+                    rot = kms.get_key_rotation_status(KeyId=kid)
+                    if not rot.get('KeyRotationEnabled', False):
+                        findings.append(_finding(
+                            engine, 'kms-rotation-disabled', 'medium', 'Data Protection',
+                            f'KMS Key Rotation Disabled: {kid}',
+                            f'KMS key {kid} does not have automatic rotation enabled.',
+                            'Enable automatic key rotation.',
+                            f'aws::kms/{kid}'))
+                except ClientError:
+                    pass
+        except ClientError:
+            pass
+
+    logs = _client(session, 'logs', r)
+    if logs:
+        try:
+            for g in logs.describe_log_groups().get('logGroups', []):
+                if g.get('retentionInDays') is None:
+                    gname = g.get('logGroupName', '?')
+                    findings.append(_finding(
+                        engine, 'cloudwatch-no-retention', 'low', 'Logging & Monitoring',
+                        f'CloudWatch Log Group No Retention: {gname}',
+                        f'Log group {gname} has no retention policy.',
+                        'Set a retention policy on the log group.',
+                        f'aws::logs/{gname}'))
+        except ClientError:
+            pass
+
+    sm = _client(session, 'secretsmanager', r)
+    if sm:
+        try:
+            for sec in sm.list_secrets().get('SecretList', []):
+                if not sec.get('RotationEnabled', False):
+                    sname = sec.get('Name', '?')
+                    findings.append(_finding(
+                        engine, 'secretsmanager-rotation-disabled', 'medium', 'Data Protection',
+                        f'Secrets Manager Rotation Disabled: {sname}',
+                        f'Secret {sname} does not have rotation enabled.',
+                        'Enable automatic rotation for the secret.',
+                        f'aws::secretsmanager/{sname}'))
+        except ClientError:
+            pass
+
+    lam = _client(session, 'lambda', r)
+    if lam:
+        try:
+            for fn in lam.list_functions().get('Functions', []):
+                fname = fn.get('FunctionName', '?')
+                try:
+                    policy = lam.get_policy(FunctionName=fname)
+                    import json as _json
+                    doc = _json.loads(policy.get('Policy', '{}'))
+                    for stmt in doc.get('Statement', []):
+                        if stmt.get('Effect') == 'Allow' and stmt.get('Principal') == '*':
+                            findings.append(_finding(
+                                engine, 'lambda-public-policy', 'high', 'Compute Security',
+                                f'Lambda Function Publicly Invocable: {fname}',
+                                f'Lambda function {fname} has a public resource policy.',
+                                'Restrict the function resource policy.',
+                                f'aws::lambda/{fname}'))
+                except lam.exceptions.ResourceNotFoundException:
+                    pass
+                except ClientError:
+                    pass
+        except ClientError:
+            pass
+
     if not findings:
         findings.append(_finding(
             engine, 'boto3-no-issues', 'informational', 'General',
@@ -238,11 +421,11 @@ def run_boto3_checks(region=None):
     return findings
 
 
-def identity():
+def identity(region=None):
     """Best-effort STS GetCallerIdentity for scan attribution. Never raises, never blocks a scan."""
     try:
-        import boto3
-        ident = boto3.Session().client('sts').get_caller_identity()
+        session = _session(region)
+        ident = session.client('sts').get_caller_identity()
         return ident.get('Account') or '', ident.get('Arn') or ''
     except Exception:
         return '', ''
@@ -250,8 +433,7 @@ def identity():
 
 def has_credentials(region=None):
     try:
-        import boto3
-        session = boto3.Session()
+        session = _session(region)
         creds = session.get_credentials()
         if creds is None:
             return False
@@ -260,7 +442,7 @@ def has_credentials(region=None):
         return False
 
 
-def connection_status():
+def connection_status(region=None):
     """Detect local AWS credentials/region without contacting AWS."""
     status = {
         'credentials_found': False,
@@ -268,8 +450,7 @@ def connection_status():
         'error': None,
     }
     try:
-        import boto3
-        session = boto3.Session()
+        session = _session(region)
         creds = session.get_credentials()
         if creds is not None:
             frozen = creds.get_frozen_credentials()
@@ -280,17 +461,16 @@ def connection_status():
     return status
 
 
-def test_connection():
+def test_connection(region=None):
     """STS GetCallerIdentity — identity only, not a scan. Never stores keys."""
-    if not has_credentials():
+    if not has_credentials(region):
         return {
             'ok': False,
             'error': 'No AWS credentials found. Run `aws configure` or set '
                      'AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY, then retry.',
         }
     try:
-        import boto3
-        session = boto3.Session()
+        session = _session(region)
         ident = session.client('sts').get_caller_identity()
         return {
             'ok': True,
@@ -301,3 +481,13 @@ def test_connection():
         }
     except Exception as exc:
         return {'ok': False, 'error': str(exc)[:500]}
+
+
+def list_regions():
+    """Return list of enabled AWS regions (best-effort)."""
+    try:
+        session = _session()
+        ec2 = session.client('ec2', region_name=session.region_name or 'us-east-1')
+        return [r['RegionName'] for r in ec2.describe_regions().get('Regions', [])]
+    except Exception:
+        return [session.region_name or 'us-east-1']

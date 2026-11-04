@@ -1,6 +1,5 @@
 import re
 
-
 VALID_SEVERITIES = ['critical', 'high', 'medium', 'low', 'informational']
 VALID_STATUSES = ['open', 'in_progress', 'resolved', 'verified']
 VALID_ASSESSMENT_STATUSES = ['pending', 'running', 'completed', 'failed']

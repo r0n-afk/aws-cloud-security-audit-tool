@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from flask import current_app, render_template, request, redirect, url_for, flash, jsonify
+from flask import current_app, flash, jsonify, redirect, render_template, request, url_for
+
 from app.modules.assessment import assessment_bp
-from app.modules.assessment.services import create_assessment, get_assessment, run_assessment, get_assessment_status
+from app.modules.assessment.services import create_assessment, get_assessment, get_assessment_status, run_assessment
 
 _rate_window = {'start': None, 'count': 0}
 
@@ -29,6 +30,8 @@ def new():
 def create():
     name = request.form.get('name', '').strip()
     description = request.form.get('description', '').strip()
+    regions_raw = request.form.get('regions', '').strip()
+    regions = [r.strip() for r in regions_raw.split(',') if r.strip()] or None
 
     if _scan_rate_limited():
         flash('Too many assessments started. Wait a few minutes and try again.', 'warning')
@@ -39,7 +42,7 @@ def create():
         flash('Invalid assessment name.', 'danger')
         return redirect(url_for('assessment.new'))
 
-    success = run_assessment(assessment.id)
+    success = run_assessment(assessment.id, regions=regions)
     if success:
         flash('Assessment completed successfully!', 'success')
     else:

@@ -8,23 +8,33 @@ from app.models.user import User
 from app.modules.auth import auth_bp
 from app.utils.validators import sanitize_input
 
-_fail_window = {'start': 0.0, 'count': 0}
+_fail_windows = {}
+
+
+def _client_key():
+    return request.remote_addr or 'unknown'
+
+
+def _window():
+    return _fail_windows.setdefault(_client_key(), {'start': 0.0, 'count': 0})
 
 
 def _too_many_fails():
     now = time.time()
-    if now - _fail_window['start'] > 60:
-        _fail_window['start'] = now
-        _fail_window['count'] = 0
-    return _fail_window['count'] >= 10
+    w = _window()
+    if now - w['start'] > 60:
+        w['start'] = now
+        w['count'] = 0
+    return w['count'] >= 10
 
 
 def _record_fail():
     now = time.time()
-    if now - _fail_window['start'] > 60:
-        _fail_window['start'] = now
-        _fail_window['count'] = 0
-    _fail_window['count'] += 1
+    w = _window()
+    if now - w['start'] > 60:
+        w['start'] = now
+        w['count'] = 0
+    w['count'] += 1
 
 
 @auth_bp.route('/setup', methods=['GET', 'POST'])

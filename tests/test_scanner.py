@@ -1,9 +1,9 @@
 import json
 import os
 
+from scanner.orchestrator import CredentialsError, run_scan
 from scanner.prowler_engine import parse_output as parse_prowler
 from scanner.scoutsuite_engine import parse_output as parse_scout
-from scanner.orchestrator import CredentialsError, run_scan
 
 
 def test_prowler_fixture_parse(tmp_path):

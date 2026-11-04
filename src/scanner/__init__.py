@@ -1,3 +1,3 @@
-from scanner.orchestrator import run_scan, EngineUnavailableError, CredentialsError
+from scanner.orchestrator import CredentialsError, EngineUnavailableError, run_scan
 
-__all__ = ['run_scan', 'EngineUnavailableError', 'CredentialsError']
+__all__ = ['CredentialsError', 'EngineUnavailableError', 'run_scan']

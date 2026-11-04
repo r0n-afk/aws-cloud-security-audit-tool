@@ -3,11 +3,12 @@ import os
 from datetime import datetime
 
 from flask import current_app
+
 from app.extensions import db
 from app.models.assessment import Assessment
+from app.models.audit import log_event
 from app.models.finding import Finding
 from app.models.report import Report
-from app.models.audit import log_event
 from app.utils.helpers import generate_unique_filename
 from reports.render import build_report_data, render_html, render_pdf
 

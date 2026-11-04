@@ -1,6 +1,7 @@
-from flask import render_template, request, jsonify
+from flask import jsonify, render_template, request
+
 from app.modules.findings import findings_bp
-from app.modules.findings.services import get_findings, get_finding, update_finding_status, get_categories
+from app.modules.findings.services import get_categories, get_finding, get_findings, update_finding_status
 
 
 @findings_bp.route('/')
