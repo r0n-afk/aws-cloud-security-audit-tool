@@ -41,7 +41,7 @@ git clone https://github.com/r0n-afk/aws-cloud-security-audit-tool.git
 cd aws-cloud-security-audit-tool
 
 :: 2. Virtualenv + deps (tries python, then py launcher)
-python -m venv .venv >nul 2>&1 || py -3.14 -m venv .venv >nul 2>&1 || py -m venv .venv
+python -m venv .venv
 call .venv\Scripts\activate
 pip install -r requirements.txt
 
