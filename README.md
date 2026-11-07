@@ -8,7 +8,7 @@ A self-hosted web application that audits AWS accounts with **Prowler + ScoutSui
 
 **Status:** student showcase project (2 contributors) · **Python 3.10–3.14** · Windows / Linux / macOS
 
-**Authors:** [Rohan Kolte (@r0n-afk)](https://github.com/r0n-afk) · [genrex-bot](https://github.com/genrex-bot)
+**Authors:** [@r0n-afk](https://github.com/r0n-afk) · [genrex-bot](https://github.com/genrex-bot)
 
 ---
 
