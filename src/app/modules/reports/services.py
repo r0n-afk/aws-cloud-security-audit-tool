@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import current_app
 
@@ -44,7 +44,7 @@ def generate_report(assessment_id, report_type):
         'engines': assessment.engines_used or 'n/a',
         'raw_count': assessment.raw_count or len(findings),
         'deduped_count': assessment.deduped_count or len(findings),
-        'generated_at': datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC'),
+        'generated_at': datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y-%m-%d %H:%M UTC'),
     }
     meta['redundancy_removed'] = max(0, meta['raw_count'] - meta['deduped_count'])
 
@@ -89,7 +89,7 @@ def generate_report(assessment_id, report_type):
         assessment_id=assessment_id,
         report_type=effective_type,
         report_path=filepath,
-        generated_date=datetime.utcnow(),
+        generated_date=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.session.add(report)
     db.session.commit()

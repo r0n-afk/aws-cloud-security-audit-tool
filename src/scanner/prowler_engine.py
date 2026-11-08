@@ -28,9 +28,8 @@ def _normalize_severity(value):
 
 def _from_prowler_record(rec):
     status = str(rec.get('Status') or rec.get('status') or '').upper()
-    if status and status not in ('FAIL', 'ERROR', 'WARNING', 'WAIVED', 'FAIL MEDIUM', 'FAIL LOW', 'FAIL HIGH', 'FAIL CRITICAL'):
-        if status == 'PASS' or status == 'MANUAL':
-            return None
+    if status and status not in ('FAIL', 'ERROR', 'WARNING', 'WAIVED', 'FAIL MEDIUM', 'FAIL LOW', 'FAIL HIGH', 'FAIL CRITICAL') and (status == 'PASS' or status == 'MANUAL'):
+        return None
     severity = rec.get('Severity') or rec.get('severity')
     if not severity:
         check_id = str(rec.get('CheckID') or rec.get('check_id') or '')
@@ -75,8 +74,7 @@ def _from_prowler_record(rec):
 
 def _iter_json_files(root):
     pattern = os.path.join(root, '**', '*.json')
-    for path in glob.glob(pattern, recursive=True):
-        yield path
+    yield from glob.glob(pattern, recursive=True)
 
 
 def parse_output(raw_dir):
@@ -119,7 +117,7 @@ def run(timeout=1800):
     cmd = ['prowler', 'aws', '-M', 'json', '-o', out_dir]
     proc = subprocess.run(
         cmd, capture_output=True, text=True, timeout=timeout,
-        shell=False, env=None, cwd=out_dir,
+        shell=False, env=None, cwd=out_dir, check=False,
     )
     if proc.returncode not in (0, 1, 2, 3, 4, 5):
         combined = (proc.stderr or '') + (proc.stdout or '')

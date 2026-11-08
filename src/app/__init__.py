@@ -117,8 +117,8 @@ def create_app(config_name='default'):
             user = None
             if session.get('user_id'):
                 user = db.session.get(User, session.get('user_id'))
-            return dict(theme=get_setting('theme', 'light'), ai_on=ai_on,
-                        current_user=user)
+            return {'theme': get_setting('theme', 'light'), 'ai_on': ai_on,
+                    'current_user': user}
 
         @app.before_request
         def _enforce_local_auth():

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.extensions import db
 from app.models.assessment import Assessment
@@ -14,7 +14,7 @@ def create_assessment(name, description=''):
     assessment = Assessment(
         name=name.strip(),
         description=description.strip() if description else '',
-        assessment_date=datetime.utcnow(),
+        assessment_date=datetime.now(timezone.utc).replace(tzinfo=None),
         status='pending'
     )
     db.session.add(assessment)
@@ -64,7 +64,7 @@ def run_assessment(assessment_id, regions=None):
             ))
 
         counts = analysis['counts']
-        assessment.completion_date = datetime.utcnow()
+        assessment.completion_date = datetime.now(timezone.utc).replace(tzinfo=None)
         assessment.status = 'completed'
         assessment.engines_used = ','.join(scan_result.get('engines', []))[:200]
         assessment.aws_account_id = str(scan_result.get('aws_account_id', ''))[:20]

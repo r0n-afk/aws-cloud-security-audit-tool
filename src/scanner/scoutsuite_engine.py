@@ -141,7 +141,7 @@ def run(timeout=1800):
     cmd = [binary, 'scan', 'aws', '--report-dir', out_dir]
     proc = subprocess.run(
         cmd, capture_output=True, text=True, timeout=timeout,
-        shell=False, cwd=out_dir,
+        shell=False, cwd=out_dir, check=False,
     )
     findings = parse_output(out_dir)
     if not findings and proc.returncode not in (0, 1, 2):

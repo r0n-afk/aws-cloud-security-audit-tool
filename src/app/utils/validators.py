@@ -9,9 +9,7 @@ VALID_REPORT_TYPES = ['pdf', 'html', 'json']
 def validate_assessment_name(name):
     if not name or not name.strip():
         return False
-    if len(name.strip()) > 200:
-        return False
-    return True
+    return len(name.strip()) <= 200
 
 
 def validate_severity(severity):

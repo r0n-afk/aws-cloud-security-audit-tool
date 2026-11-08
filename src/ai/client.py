@@ -28,7 +28,7 @@ def _settings():
 
 def _validate_base_url(base_url):
     if not base_url.startswith('https://'):
-        if base_url.startswith('http://127.0.0.1') or base_url.startswith('http://localhost'):
+        if base_url.startswith(('http://127.0.0.1', 'http://localhost')):
             return
         raise AIError('AI base URL must be HTTPS (local Ollama http://127.0.0.1 is allowed).')
 
@@ -85,9 +85,11 @@ def summarize_assessment(assessment, findings_sample):
     lines = [
         f"Assessment: {assessment.name}",
         f"Score: {assessment.security_score}/100",
-        f"Total findings: {assessment.total_findings} "
-        f"(C:{assessment.critical_count} H:{assessment.high_count} "
-        f"M:{assessment.medium_count} L:{assessment.low_count} I:{assessment.informational_count})",
+        (
+            f"Total findings: {assessment.total_findings} "
+            f"(C:{assessment.critical_count} H:{assessment.high_count} "
+            f"M:{assessment.medium_count} L:{assessment.low_count} I:{assessment.informational_count})"
+        ),
         'Top findings:',
     ]
     for f in findings_sample[:10]:

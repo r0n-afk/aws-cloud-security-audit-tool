@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import current_app, flash, jsonify, redirect, render_template, request, url_for
 
@@ -9,7 +9,7 @@ _rate_window = {'start': None, 'count': 0}
 
 
 def _scan_rate_limited():
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     window = current_app.config.get('SCAN_RATE_LIMIT_WINDOW', 600)
     limit = current_app.config.get('SCAN_RATE_LIMIT_MAX', 5)
     if _rate_window['start'] is None or (now - _rate_window['start']).total_seconds() > window:

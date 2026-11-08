@@ -85,8 +85,8 @@ def login():
             session.clear()
             session['user_id'] = user.id
             session.permanent = True
-            from datetime import datetime
-            user.last_login = datetime.utcnow()
+            from datetime import datetime, timezone
+            user.last_login = datetime.now(timezone.utc).replace(tzinfo=None)
             db.session.commit()
             log_event('login', f'Login: {username}')
             return redirect(url_for('dashboard.index'))

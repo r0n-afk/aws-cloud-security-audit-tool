@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def format_date(date_obj, fmt='%Y-%m-%d %H:%M'):
@@ -23,7 +23,7 @@ def format_percentage(value):
 
 def generate_unique_filename(extension):
     unique_id = uuid.uuid4().hex[:12]
-    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    timestamp = datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y%m%d_%H%M%S')
     return f'report_{timestamp}_{unique_id}.{extension}'
 
 
