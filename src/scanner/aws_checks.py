@@ -7,6 +7,7 @@ SEVERITY_MAP = {
 
 
 def _finding(engine, control_id, severity, category, title, description, recommendation, resource='account'):
+    """Build a normalized finding dict for the boto3 scanner."""
     return {
         'engine': engine,
         'control_id': control_id,
