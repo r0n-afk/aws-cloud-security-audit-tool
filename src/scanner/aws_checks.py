@@ -175,6 +175,17 @@ def run_boto3_checks(region=None):
                 except ClientError:
                     pass
                 try:
+                    logging_cfg = s3.get_bucket_logging(Bucket=bname)
+                    if not logging_cfg.get('LoggingEnabled'):
+                        findings.append(_finding(
+                            engine, 's3-access-logging-disabled', 'medium', 'Logging & Monitoring',
+                            f'S3 Access Logging Disabled: {bname}',
+                            f'Bucket {bname} does not have server access logging enabled.',
+                            'Enable S3 server access logging on the bucket.',
+                            f'aws::s3/{bname}'))
+                except ClientError:
+                    pass
+                try:
                     pab = s3.get_public_access_block(Bucket=bname)
                     cfg = pab.get('PublicAccessBlockConfiguration', {})
                     if not all(cfg.get(k) for k in ('BlockPublicAcls', 'IgnorePublicAcls', 'BlockPublicPolicy', 'RestrictPublicBuckets')):
