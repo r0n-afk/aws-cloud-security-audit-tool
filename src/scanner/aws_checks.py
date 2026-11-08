@@ -35,6 +35,7 @@ def _session(region=None):
 
 
 def run_boto3_checks(region=None):
+    """Run custom boto3 security checks and return a list of findings."""
     from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 
     try:
