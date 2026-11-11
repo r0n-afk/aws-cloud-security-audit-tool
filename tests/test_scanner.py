@@ -1,5 +1,6 @@
 import json
 import os
+from unittest.mock import MagicMock
 
 from scanner.orchestrator import CredentialsError, run_scan
 from scanner.prowler_engine import parse_output as parse_prowler
@@ -78,3 +79,37 @@ def test_identity_returns_empty_tuple_on_error(monkeypatch):
 
     monkeypatch.setattr(boto3.Session, 'client', _boom)
     assert aws_checks.identity() == ('', '')
+
+
+def test_boto3_ebs_default_encryption_finding(monkeypatch):
+    from scanner import aws_checks
+
+    class _Creds:
+        access_key = 'AKIAEXAMPLE'
+
+        def get_frozen_credentials(self):
+            return self
+
+    class _Session:
+        region_name = 'us-east-1'
+
+        def get_credentials(self):
+            return _Creds()
+
+    ec2 = MagicMock()
+    ec2.describe_security_groups.return_value = {'SecurityGroups': []}
+    ec2.describe_volumes.return_value = {'Volumes': []}
+    ec2.get_ebs_encryption_by_default.return_value = {'EbsEncryptionByDefault': False}
+    ec2.describe_instances.return_value = {'Reservations': []}
+    ec2.describe_snapshots.return_value = {'Snapshots': []}
+    ec2.describe_vpcs.return_value = {'Vpcs': []}
+    ec2.describe_flow_logs.return_value = {'FlowLogs': []}
+
+    monkeypatch.setattr(aws_checks, '_session', lambda region=None: _Session())
+    monkeypatch.setattr(
+        aws_checks, '_client',
+        lambda session, service, region=None: ec2 if service == 'ec2' else None)
+
+    findings = aws_checks.run_boto3_checks()
+    ids = {f['control_id'] for f in findings}
+    assert 'ebs-default-encryption-disabled' in ids
