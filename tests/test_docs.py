@@ -41,7 +41,7 @@ def test_weasyprint_import_stays_lazy():
     with open(os.path.join(BASE, 'src', 'reports', 'render.py'), encoding='utf-8') as f:
         for line in f:
             s = line.strip()
-            if s.startswith('from weasyprint') or s.startswith('import weasyprint'):
+            if s.startswith(('from weasyprint', 'import weasyprint')):
                 assert line.startswith(' '), f'weasyprint import must stay inside a function: {s}'
 
 
