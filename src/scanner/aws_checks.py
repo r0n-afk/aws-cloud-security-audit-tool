@@ -243,6 +243,17 @@ def run_boto3_checks(region=None):
         except ClientError:
             pass
         try:
+            default_enc = ec2.get_ebs_encryption_by_default()
+            if not default_enc.get('EbsEncryptionByDefault', False):
+                findings.append(_finding(
+                    engine, 'ebs-default-encryption-disabled', 'medium', 'Data Protection',
+                    'EBS Default Encryption Disabled',
+                    'New EBS volumes in this region are not encrypted by default.',
+                    'Enable EBS default encryption for the region.',
+                    'aws::ec2'))
+        except ClientError:
+            pass
+        try:
             for res in ec2.describe_instances().get('Reservations', []):
                 for inst in res.get('Instances', []):
                     md = inst.get('MetadataOptions', {})
