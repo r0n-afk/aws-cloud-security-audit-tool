@@ -13,6 +13,12 @@ class CredentialsError(Exception):
 
 
 def run_scan(timeout=1800, regions=None):
+    """Run available AWS engines and return normalized findings.
+
+    Prefers Prowler and ScoutSuite when installed; otherwise falls back to the
+    boto3 checks for each region. Raises CredentialsError without credentials
+    and EngineUnavailableError when no engine produces findings.
+    """
     if not aws_checks.has_credentials():
         raise CredentialsError(
             'No AWS credentials found. Run `aws configure` or set '
