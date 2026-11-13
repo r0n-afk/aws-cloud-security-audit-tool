@@ -166,6 +166,17 @@ def run_boto3_checks(region=None):
                         'Enable default SSE-S3 or SSE-KMS encryption on the bucket.',
                         f'aws::s3/{bname}'))
                 try:
+                    policy_status = s3.get_bucket_policy_status(Bucket=bname)
+                    if policy_status.get('PolicyStatus', {}).get('IsPublic'):
+                        findings.append(_finding(
+                            engine, 's3-public-policy', 'critical', 'Data Protection',
+                            f'Public S3 Bucket Policy: {bname}',
+                            f'Bucket {bname} has a bucket policy granting public access.',
+                            'Remove public statements from the bucket policy.',
+                            f'aws::s3/{bname}'))
+                except ClientError:
+                    pass
+                try:
                     ver = s3.get_bucket_versioning(Bucket=bname)
                     if ver.get('Status') != 'Enabled':
                         findings.append(_finding(
