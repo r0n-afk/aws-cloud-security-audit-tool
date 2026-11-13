@@ -113,3 +113,42 @@ def test_boto3_ebs_default_encryption_finding(monkeypatch):
     findings = aws_checks.run_boto3_checks()
     ids = {f['control_id'] for f in findings}
     assert 'ebs-default-encryption-disabled' in ids
+
+
+def test_boto3_public_policy_finding(monkeypatch):
+    from scanner import aws_checks
+
+    class _Creds:
+        access_key = 'AKIAEXAMPLE'
+
+        def get_frozen_credentials(self):
+            return self
+
+    class _Session:
+        region_name = 'us-east-1'
+
+        def get_credentials(self):
+            return _Creds()
+
+    s3 = MagicMock()
+    s3.list_buckets.return_value = {'Buckets': [{'Name': 'public-bucket'}]}
+    s3.get_bucket_acl.return_value = {'Grants': []}
+    s3.get_bucket_encryption.return_value = {'ServerSideEncryptionConfiguration': {}}
+    s3.get_bucket_policy_status.return_value = {'PolicyStatus': {'IsPublic': True}}
+    s3.get_bucket_versioning.return_value = {'Status': 'Enabled'}
+    s3.get_bucket_logging.return_value = {'LoggingEnabled': True}
+    s3.get_public_access_block.return_value = {
+        'PublicAccessBlockConfiguration': {
+            'BlockPublicAcls': True, 'IgnorePublicAcls': True,
+            'BlockPublicPolicy': True, 'RestrictPublicBuckets': True,
+        }
+    }
+
+    monkeypatch.setattr(aws_checks, '_session', lambda region=None: _Session())
+    monkeypatch.setattr(
+        aws_checks, '_client',
+        lambda session, service, region=None: s3 if service == 's3' else None)
+
+    findings = aws_checks.run_boto3_checks()
+    ids = {f['control_id'] for f in findings}
+    assert 's3-public-policy' in ids
