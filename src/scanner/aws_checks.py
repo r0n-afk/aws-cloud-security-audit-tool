@@ -520,9 +520,10 @@ def test_connection(region=None):
 
 def list_regions():
     """Return list of enabled AWS regions (best-effort)."""
+    session = None
     try:
         session = _session()
         ec2 = session.client('ec2', region_name=session.region_name or 'us-east-1')
         return [r['RegionName'] for r in ec2.describe_regions().get('Regions', [])]
     except Exception:
-        return [session.region_name or 'us-east-1']
+        return [(session.region_name if session else None) or 'us-east-1']
