@@ -30,8 +30,6 @@ def run_scan(timeout=1800, regions=None):
             regions = aws_checks.list_regions()
         except Exception:
             regions = [None]
-    if not regions:
-        regions = [None]
 
     account, arn = aws_checks.identity(regions[0] if regions else None)
 
