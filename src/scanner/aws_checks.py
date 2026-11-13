@@ -21,6 +21,7 @@ def _finding(engine, control_id, severity, category, title, description, recomme
 
 
 def _client(session, service, region=None):
+    """Return a boto3 client for the service, or None when creation fails."""
     try:
         return session.client(service, region_name=region) if region else session.client(service)
     except Exception:
@@ -28,6 +29,7 @@ def _client(session, service, region=None):
 
 
 def _session(region=None):
+    """Create a boto3 Session, honoring an explicit region when given."""
     import boto3
     if region:
         return boto3.Session(region_name=region)
