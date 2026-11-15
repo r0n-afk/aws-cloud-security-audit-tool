@@ -97,6 +97,7 @@ def run_boto3_checks(region=None):
         except ClientError:
             pass
         try:
+            from datetime import datetime, timezone
             users = iam.list_users().get('Users', [])
             for user in users:
                 name = user['UserName']
@@ -108,8 +109,17 @@ def run_boto3_checks(region=None):
                         f'IAM user {name} has a console password but no MFA device.',
                         'Require MFA for all IAM users with console access.',
                         f'aws::iam-user/{name}'))
+                last_used = user.get('PasswordLastUsed')
+                if last_used:
+                    pw_age = (datetime.now(timezone.utc) - last_used).days
+                    if pw_age > 90:
+                        findings.append(_finding(
+                            engine, 'iam-stale-console-password', 'medium', 'Identity & Access Management',
+                            f'Stale Console Password: {name}',
+                            f'IAM user {name} console password was last used {pw_age} days ago.',
+                            'Enforce password rotation or disable unused console access.',
+                            f'aws::iam-user/{name}'))
                 key_meta = iam.list_access_keys(UserName=name).get('AccessKeyMetadata', [])
-                from datetime import datetime, timezone
                 for key in key_meta:
                     created = key.get('CreateDate')
                     if created:

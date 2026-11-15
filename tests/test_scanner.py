@@ -152,3 +152,46 @@ def test_boto3_public_policy_finding(monkeypatch):
     findings = aws_checks.run_boto3_checks()
     ids = {f['control_id'] for f in findings}
     assert 's3-public-policy' in ids
+
+
+def test_boto3_stale_console_password_finding(monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    from scanner import aws_checks
+
+    class _Creds:
+        access_key = 'AKIAEXAMPLE'
+
+        def get_frozen_credentials(self):
+            return self
+
+    class _Session:
+        region_name = 'us-east-1'
+
+        def get_credentials(self):
+            return _Creds()
+
+    iam = MagicMock()
+    iam.get_account_summary.return_value = {
+        'SummaryMap': {'AccountMFAEnabled': 1, 'AccountAccessKeysPresent': 0}
+    }
+    iam.get_account_password_policy.return_value = {
+        'PasswordPolicy': {'MinimumPasswordLength': 14, 'RequireUppercaseCharacters': True}
+    }
+    iam.list_users.return_value = {
+        'Users': [{
+            'UserName': 'alice',
+            'PasswordLastUsed': datetime.now(timezone.utc) - timedelta(days=120),
+        }]
+    }
+    iam.list_mfa_devices.return_value = {'MFADevices': [{'SerialNumber': 'arn:aws:iam::1:mfa/alice'}]}
+    iam.list_access_keys.return_value = {'AccessKeyMetadata': []}
+
+    monkeypatch.setattr(aws_checks, '_session', lambda region=None: _Session())
+    monkeypatch.setattr(
+        aws_checks, '_client',
+        lambda session, service, region=None: iam if service == 'iam' else None)
+
+    findings = aws_checks.run_boto3_checks()
+    ids = {f['control_id'] for f in findings}
+    assert 'iam-stale-console-password' in ids
