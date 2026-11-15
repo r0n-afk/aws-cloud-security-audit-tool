@@ -479,6 +479,7 @@ def identity(region=None):
 
 
 def has_credentials(region=None):
+    """Return True when usable AWS credentials are resolvable for the region."""
     try:
         session = _session(region)
         creds = session.get_credentials()
