@@ -6,7 +6,7 @@ Two-maintainer student showcase project. PRs and issues welcome from beginners a
 
 | Area | Maintainer |
 |------|-----------|
-| Code (`src/`, `tests/`, `run.py`, `config.py`, `requirements*.txt`) | [Rohan Kolte (@r0n-afk)](https://github.com/r0n-afk) |
+| Code (`src/`, `tests/`, `run.py`, `config.py`, `requirements*.txt`) | [@r0n-afk](https://github.com/r0n-afk) |
 | Docs (`README.md`, `docs/`, `SECURITY.md`, `CONTRIBUTING.md`) | [genrex-bot](https://github.com/genrex-bot) |
 
 ## Dev setup
