@@ -237,16 +237,19 @@ def run_boto3_checks(region=None):
             for sg in sgs:
                 for perm in sg.get('IpPermissions', []):
                     ranges = [x.get('CidrIp') for x in perm.get('IpRanges', [])]
-                    if '0.0.0.0/0' in ranges:
+                    ranges += [x.get('CidrIpv6') for x in perm.get('Ipv6Ranges', [])]
+                    open_ranges = [c for c in ('0.0.0.0/0', '::/0') if c in ranges]
+                    if open_ranges:
                         port = perm.get('FromPort')
                         if port in (22, 3389) or (port is None and perm.get('IpProtocol') == '-1'):
                             sg_id = sg.get('GroupId', '?')
                             sg_name = sg.get('GroupName', sg_id)
                             port_txt = str(port) if port is not None else 'all'
+                            cidr_txt = ', '.join(open_ranges)
                             findings.append(_finding(
                                 engine, 'sg-open-admin', 'high', 'Network Security',
-                                f'Security Group Open to 0.0.0.0/0: {sg_id}',
-                                f'Security group {sg_name} allows inbound 0.0.0.0/0 on port {port_txt}.',
+                                f'Security Group Open to {cidr_txt}: {sg_id}',
+                                f'Security group {sg_name} allows inbound {cidr_txt} on port {port_txt}.',
                                 'Restrict security group rules to known IP ranges.',
                                 f'aws::sg/{sg_id}'))
                             break
