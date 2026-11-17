@@ -1,5 +1,7 @@
 """Custom boto3-based security checks (fallback when Prowler/ScoutSuite absent)."""
 
+import json
+
 SEVERITY_MAP = {
     'critical': 'critical', 'high': 'high', 'medium': 'medium',
     'low': 'low', 'informational': 'informational',
@@ -444,8 +446,7 @@ def run_boto3_checks(region=None):
                 fname = fn.get('FunctionName', '?')
                 try:
                     policy = lam.get_policy(FunctionName=fname)
-                    import json as _json
-                    doc = _json.loads(policy.get('Policy', '{}'))
+                    doc = json.loads(policy.get('Policy', '{}'))
                     for stmt in doc.get('Statement', []):
                         if stmt.get('Effect') == 'Allow' and stmt.get('Principal') == '*':
                             findings.append(_finding(
