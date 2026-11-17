@@ -238,3 +238,50 @@ def test_boto3_recent_console_password_no_finding(monkeypatch):
     findings = aws_checks.run_boto3_checks()
     ids = {f['control_id'] for f in findings}
     assert 'iam-stale-console-password' not in ids
+
+
+def test_boto3_security_group_ipv6_open_admin(monkeypatch):
+    from scanner import aws_checks
+
+    class _Creds:
+        access_key = 'AKIAEXAMPLE'
+
+        def get_frozen_credentials(self):
+            return self
+
+    class _Session:
+        region_name = 'us-east-1'
+
+        def get_credentials(self):
+            return _Creds()
+
+    ec2 = MagicMock()
+    ec2.describe_security_groups.return_value = {
+        'SecurityGroups': [{
+            'GroupId': 'sg-0123456789abcdef0',
+            'GroupName': 'web',
+            'IpPermissions': [{
+                'IpProtocol': 'tcp',
+                'FromPort': 22,
+                'ToPort': 22,
+                'IpRanges': [],
+                'Ipv6Ranges': [{'CidrIpv6': '::/0'}],
+            }],
+        }]
+    }
+    ec2.describe_volumes.return_value = {'Volumes': []}
+    ec2.get_ebs_encryption_by_default.return_value = {'EbsEncryptionByDefault': True}
+    ec2.describe_instances.return_value = {'Reservations': []}
+    ec2.describe_snapshots.return_value = {'Snapshots': []}
+    ec2.describe_vpcs.return_value = {'Vpcs': []}
+    ec2.describe_flow_logs.return_value = {'FlowLogs': []}
+
+    monkeypatch.setattr(aws_checks, '_session', lambda region=None: _Session())
+    monkeypatch.setattr(
+        aws_checks, '_client',
+        lambda session, service, region=None: ec2 if service == 'ec2' else None)
+
+    findings = aws_checks.run_boto3_checks()
+    sg_findings = [f for f in findings if f['control_id'] == 'sg-open-admin']
+    assert len(sg_findings) == 1
+    assert '::/0' in sg_findings[0]['description']
