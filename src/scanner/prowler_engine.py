@@ -8,6 +8,7 @@ import tempfile
 
 
 def is_available():
+    """Return True when the `prowler` executable is found on PATH."""
     return shutil.which('prowler') is not None
 
 
@@ -78,6 +79,7 @@ def _iter_json_files(root):
 
 
 def parse_output(raw_dir):
+    """Normalize every Prowler JSON file under raw_dir into findings."""
     findings = []
     seen = set()
     for path in _iter_json_files(raw_dir):
@@ -111,6 +113,7 @@ def parse_output(raw_dir):
 
 
 def run(timeout=1800):
+    """Run the Prowler CLI in JSON mode and return normalized findings."""
     if not is_available():
         raise FileNotFoundError('prowler executable not found on PATH')
     out_dir = tempfile.mkdtemp(prefix='prowler_out_')
