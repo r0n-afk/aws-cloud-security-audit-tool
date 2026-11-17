@@ -114,6 +114,8 @@ Settings → **AWS connection** shows credential status, region, and a **Test co
 Without the tool installed, boto3 fallback checks still run.  
 Missing credentials → hard error (by design).
 
+**Fallback check coverage** (`src/scanner/aws_checks.py`): IAM root MFA / root access keys / password policy / user MFA and stale console passwords and access keys; S3 public ACL & policy, encryption, versioning, access logging, Block Public Access; EC2 security groups open to `0.0.0.0/0` or `::/0` on admin ports, unencrypted EBS volumes and snapshots, EBS default encryption, IMDSv2, VPC flow logs; CloudTrail (presence, multi-region, log validation); GuardDuty; RDS encryption and public access; KMS key rotation; CloudWatch log retention; Secrets Manager rotation; Lambda public resource policies.
+
 ### Application Settings
 
 Report Format, Theme, Assessments Per Page, Findings Per Page — the **Save Application Settings** button appears only when one of them changes.
