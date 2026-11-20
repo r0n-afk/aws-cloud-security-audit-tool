@@ -387,6 +387,13 @@ def run_boto3_checks(region=None):
                         f'RDS instance {did} is publicly accessible.',
                         'Disable public accessibility for RDS.',
                         f'aws::rds/{did}'))
+                if dbi.get('BackupRetentionPeriod', 0) == 0:
+                    findings.append(_finding(
+                        engine, 'rds-backup-retention-disabled', 'high', 'Data Protection',
+                        f'RDS Backup Retention Disabled: {did}',
+                        f'RDS instance {did} has automated backup retention disabled.',
+                        'Set an automated backup retention period of at least 7 days.',
+                        f'aws::rds/{did}'))
         except ClientError:
             pass
 
