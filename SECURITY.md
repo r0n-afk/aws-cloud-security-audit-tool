@@ -39,6 +39,7 @@
 - Parse only known JSON shapes; unknown fields ignored.
 - No runtime `pip install` of engines from the app — operators install tools themselves.
 - Engine failures are collected into `assessment.scan_error` / `errors[]`, never fatal to the web process unless *all* engines fail.
+- The boto3 fallback scanner issues only describe/list/get calls — it never invokes mutating AWS APIs and runs under the caller's read-only session.
 
 ## AI module
 
