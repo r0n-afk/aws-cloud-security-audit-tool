@@ -285,3 +285,36 @@ def test_boto3_security_group_ipv6_open_admin(monkeypatch):
     sg_findings = [f for f in findings if f['control_id'] == 'sg-open-admin']
     assert len(sg_findings) == 1
     assert '::/0' in sg_findings[0]['description']
+
+
+def test_boto3_rds_backup_retention_disabled(monkeypatch):
+    from scanner import aws_checks
+
+    class _Creds:
+        access_key = 'AKIAEXAMPLE'
+
+        def get_frozen_credentials(self):
+            return self
+
+    class _Session:
+        region_name = 'us-east-1'
+
+        def get_credentials(self):
+            return _Creds()
+
+    rds = MagicMock()
+    rds.describe_db_instances.return_value = {'DBInstances': [{
+        'DBInstanceIdentifier': 'orders-db',
+        'StorageEncrypted': True,
+        'PubliclyAccessible': False,
+        'BackupRetentionPeriod': 0,
+    }]}
+
+    monkeypatch.setattr(aws_checks, '_session', lambda region=None: _Session())
+    monkeypatch.setattr(
+        aws_checks, '_client',
+        lambda session, service, region=None: rds if service == 'rds' else None)
+
+    findings = aws_checks.run_boto3_checks()
+    ids = {f['control_id'] for f in findings}
+    assert 'rds-backup-retention-disabled' in ids
